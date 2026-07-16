@@ -149,13 +149,44 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $$
+as $
+declare
+  new_organization_id uuid;
 begin
-  insert into public.profiles (id) values (new.id)
+  insert into public.profiles (id)
+  values (new.id)
   on conflict (id) do nothing;
+
+  if not exists (
+    select 1
+    from public.organization_members membership
+    where membership.user_id = new.id
+  ) then
+    insert into public.organizations (name, slug, created_by)
+    values (
+      'QMSPilot',
+      'qmspilot-' || left(replace(new.id::text, '-', ''), 12),
+      new.id
+    )
+    returning id into new_organization_id;
+
+    insert into public.organization_members (
+      organization_id,
+      user_id,
+      role,
+      created_by
+    )
+    values (
+      new_organization_id,
+      new.id,
+      'owner',
+      new.id
+    );
+  end if;
+
   return new;
 end;
-$$;
+$;
 revoke all on function private.handle_new_user() from public, anon, authenticated;
 
 create trigger on_auth_user_created
@@ -204,43 +235,6 @@ revoke all on function private.is_org_member(uuid) from public, anon;
 revoke all on function private.has_org_role(uuid, public.organization_role[]) from public, anon;
 grant execute on function private.is_org_member(uuid) to authenticated;
 grant execute on function private.has_org_role(uuid, public.organization_role[]) to authenticated;
-
-create or replace function public.create_organization(p_name text, p_slug text)
-returns uuid
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  current_user_id uuid := (select auth.uid());
-  normalized_name text := btrim(p_name);
-  normalized_slug text := lower(btrim(p_slug));
-  new_organization_id uuid;
-begin
-  if current_user_id is null then
-    raise exception 'Authentication is required.';
-  end if;
-  if char_length(normalized_name) not between 2 and 120 then
-    raise exception 'Organization name must be between 2 and 120 characters.';
-  end if;
-  if normalized_slug !~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'
-     or char_length(normalized_slug) not between 2 and 80 then
-    raise exception 'Organization slug is invalid.';
-  end if;
-
-  insert into public.organizations (name, slug, created_by)
-  values (normalized_name, normalized_slug, current_user_id)
-  returning id into new_organization_id;
-
-  insert into public.organization_members (organization_id, user_id, role, created_by)
-  values (new_organization_id, current_user_id, 'owner', current_user_id);
-
-  return new_organization_id;
-end;
-$$;
-
-revoke all on function public.create_organization(text, text) from public, anon;
-grant execute on function public.create_organization(text, text) to authenticated;
 
 create or replace function private.prevent_tenant_reassignment()
 returns trigger
