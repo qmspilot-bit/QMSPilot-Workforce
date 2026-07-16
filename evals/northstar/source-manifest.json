@@ -1,0 +1,79 @@
+{
+  "scenario_id": "northstar-audit-readiness-2026-07",
+  "version": "1.0.0",
+  "synthetic": true,
+  "files": [
+    {
+      "name": "00_Northstar_Scenario_Brief.pdf",
+      "role": "scenario instructions",
+      "bytes": 4419,
+      "sha256": "0e1b4ed7bcbedd86baf30c16574cf33958307ead48eab0f6332db96d01f801f4"
+    },
+    {
+      "name": "01_Company_and_QMS_Profile.pdf",
+      "role": "company and QMS context",
+      "bytes": 6104,
+      "sha256": "79f81ab44a97736b3d8844c096259d31ab45c5ffe0ad60e49c0130d18c87ff12"
+    },
+    {
+      "name": "02_NPS-PR-004_Document_Control.docx",
+      "role": "controlled procedure",
+      "bytes": 40162,
+      "sha256": "4fd82f69fcd7d3604cef43ddfe293345ee1b7c6038bd3cf64f7be3f6973f10b6"
+    },
+    {
+      "name": "03_IA-2026-02_Internal_Audit_Report.pdf",
+      "role": "internal audit evidence",
+      "bytes": 6480,
+      "sha256": "61302c126b44f4f9c3ca75ac4bdddb7c1c5e8cfa240199f1178ae69d7aca71d6"
+    },
+    {
+      "name": "04_CAPA_Action_Register.xlsx",
+      "role": "corrective-action register",
+      "bytes": 9666,
+      "sha256": "7f3ba8aaa0ac5dde88e40805ed6af20839dfe4beb994ec848facd54d3e511dad"
+    },
+    {
+      "name": "05_Management_Review_Minutes_2026-06.docx",
+      "role": "management review evidence",
+      "bytes": 40377,
+      "sha256": "27341cf0e72955dbf561a91cdfd9a0b14bad6035c552e9fe535892a4383a9f7d"
+    },
+    {
+      "name": "06_Training_Matrix.xlsx",
+      "role": "competence evidence",
+      "bytes": 7880,
+      "sha256": "ee2c883ac01f9d2c35d70c91e2a8beb0f88b5f1aa968ec5024185ca842e9265d"
+    },
+    {
+      "name": "07_PM_and_Calibration_Records.xlsx",
+      "role": "maintenance and calibration evidence",
+      "bytes": 8361,
+      "sha256": "867f2f90b2bc682fb2228ee6723388793a1a797aee0e553170ac1e3a1f26bc1d"
+    },
+    {
+      "name": "08_SCAR-2026-007_Supplier_Nonconformance.pdf",
+      "role": "supplier corrective-action evidence",
+      "bytes": 4300,
+      "sha256": "c186c45336a99ebfee5be6826f4785a90ec8d43e49efa09e196da55aafd0406b"
+    },
+    {
+      "name": "09_CC-2026-014_Customer_Complaint.pdf",
+      "role": "customer complaint evidence",
+      "bytes": 4100,
+      "sha256": "b89d2f18a6b605ae8120e02fa1880f148ff8ff9f51e994e1ae19b1c5b94068e5"
+    },
+    {
+      "name": "10_Clean_Evidence_Packet.pdf",
+      "role": "negative controls",
+      "bytes": 5313,
+      "sha256": "2971c448e1d6d29cd4ca269ffe3bae772731a05b9ef27d449453f96b33a48a3a"
+    },
+    {
+      "name": "README.txt",
+      "role": "pack instructions",
+      "bytes": 662,
+      "sha256": "5ef09a8ed06551b5ef8aa4dfc91821b050d526ff0b47fdf0751f667304247102"
+    }
+  ]
+}

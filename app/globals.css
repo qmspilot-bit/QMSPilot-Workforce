@@ -75,7 +75,23 @@ main { min-width: 0; }
 .approval-note strong { font-size: 11px; }
 .approval-note span { margin-top: 4px; color: #537265; font-size: 10px; line-height: 1.4; }
 
-.mission-card, .panel, .empty-state, .brief-hero { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+.mission-card, .panel, .empty-state, .brief-hero, .scenario-lab { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+.scenario-lab { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 28px; align-items: center; margin-bottom: 18px; padding: 24px; overflow: hidden; background: linear-gradient(135deg, #fff 0%, #f7fbff 68%, #edf5ff 100%); border-color: #cbdcf0; }
+.scenario-badge { width: max-content; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 13px; padding: 6px 9px; color: #7b5100; background: #fff4d9; border: 1px solid #ead29b; border-radius: 999px; font-size: 8px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.scenario-badge svg { width: 13px; }
+.scenario-copy h2 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+.scenario-copy > p:not(.eyebrow) { max-width: 760px; margin: 8px 0 17px; color: var(--slate); font-size: 11px; line-height: 1.55; }
+.scenario-features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.scenario-features > span { min-width: 0; display: grid; grid-template-columns: 25px 1fr; column-gap: 7px; padding: 9px; color: var(--muted); background: rgba(255,255,255,.76); border: 1px solid #dce7f3; border-radius: 10px; font-size: 8px; line-height: 1.35; }
+.scenario-features svg { grid-row: 1 / 3; width: 18px; color: var(--blue); }
+.scenario-features strong { display: block; margin-bottom: 2px; color: var(--ink); font-size: 9px; }
+.scenario-actions { display: grid; gap: 9px; }
+.scenario-primary, .scenario-secondary { min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 0 13px; border-radius: 10px; font-size: 10px; font-weight: 850; text-decoration: none; }
+.scenario-primary { border: 0; color: white; background: linear-gradient(135deg, var(--deep), var(--blue)); box-shadow: 0 9px 22px rgba(11,95,198,.18); }
+.scenario-secondary { color: var(--deep); background: white; border: 1px solid #c7dbef; }
+.scenario-primary svg, .scenario-secondary svg { width: 16px; }
+.scenario-primary svg:last-child { margin-left: auto; }
+.scenario-actions small { color: var(--muted); font-size: 8px; line-height: 1.4; text-align: center; }
 .mission-card { padding: 25px; }
 .mission-head { display: flex; gap: 12px; align-items: center; padding-bottom: 19px; border-bottom: 1px solid #edf1f6; }
 .pilot-mark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: white; background: linear-gradient(135deg, var(--deep), var(--blue)); }
@@ -96,6 +112,14 @@ input:focus, textarea:focus { border-color: #67a6e9; box-shadow: 0 0 0 3px rgba(
 .remove-file { display: flex; gap: 4px; align-items: center; padding: 7px 8px; border: 0; color: var(--red); background: transparent; font-size: 10px; font-weight: 700; }
 .remove-file svg { width: 14px; }
 .file-note { color: var(--muted); font-size: 9px; }
+.file-selection { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 12px; }
+.file-selection > span { min-width: 0; display: grid; grid-template-columns: 18px minmax(0, 1fr) 24px; gap: 7px; align-items: center; padding: 8px 9px; border: 1px solid #dbe5ef; border-radius: 9px; background: #f8fbfe; }
+.file-selection > span > svg { width: 16px; color: var(--blue); }
+.file-selection span span, .file-selection strong, .file-selection small { min-width: 0; display: block; }
+.file-selection strong { overflow: hidden; color: #344357; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.file-selection small { margin-top: 2px; color: var(--muted); font-size: 7px; }
+.file-selection button { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; color: var(--muted); background: white; border: 1px solid #dbe5ef; border-radius: 7px; }
+.file-selection button svg { width: 12px; }
 .analyze-button { margin-left: auto; min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border: 0; border-radius: 10px; color: white; background: linear-gradient(135deg, var(--deep), var(--blue)); font-size: 11px; font-weight: 800; box-shadow: 0 9px 22px rgba(11,95,198,.2); }
 .analyze-button svg { width: 17px; }
 .analyze-button:disabled { cursor: not-allowed; opacity: .45; box-shadow: none; }
@@ -254,6 +278,9 @@ button.cloud-chip:hover { border-color: #8fbbe9; background: #eaf4ff; }
   .quiet-button svg { margin: 0; }
   .page-intro { align-items: flex-start; flex-direction: column; }
   .approval-note { max-width: 100%; }
+  .scenario-lab { grid-template-columns: 1fr; }
+  .scenario-actions { grid-template-columns: 1fr 1fr; }
+  .scenario-actions small { grid-column: 1 / -1; }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -262,7 +289,9 @@ button.cloud-chip:hover { border-color: #8fbbe9; background: #eaf4ff; }
   .topbar { height: 66px; padding: 0 14px; }
   .status-chip { display: none; }
   .page-intro h1 { font-size: 31px; }
-  .mission-card, .panel, .brief-hero { padding: 18px; border-radius: 14px; }
+  .mission-card, .panel, .brief-hero, .scenario-lab { padding: 18px; border-radius: 14px; }
+  .scenario-features, .scenario-actions, .file-selection { grid-template-columns: 1fr; }
+  .scenario-actions small { grid-column: auto; }
   .form-grid { grid-template-columns: 1fr; }
   .mission-footer { flex-wrap: wrap; }
   .file-note { width: 100%; order: 3; }

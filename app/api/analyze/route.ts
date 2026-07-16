@@ -6,6 +6,8 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
+const MAX_TOTAL_FILE_BYTES = 30 * 1024 * 1024;
+const MAX_FILES = 12;
 const allowedExtensions = new Set([
   "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "csv", "tsv",
   "txt", "md", "json", "html", "xml", "rtf", "odt",
@@ -186,21 +188,33 @@ export async function POST(request: Request) {
     const title = String(form.get("title") ?? "").trim();
     const context = String(form.get("context") ?? "").trim();
     const sourceText = String(form.get("sourceText") ?? "").trim();
-    const fileValue = form.get("file");
-    const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
+    const legacyFile = form.get("file");
+    const files = [
+      ...form.getAll("files"),
+      ...(legacyFile instanceof File ? [legacyFile] : []),
+    ].filter((value): value is File => value instanceof File && value.size > 0);
 
-    if (!sourceText && !file) {
+    if (!sourceText && files.length === 0) {
       return NextResponse.json({ error: "Paste source text or attach a supported file." }, { status: 400 });
     }
-    if (file && file.size > MAX_FILE_BYTES) {
-      return NextResponse.json({ error: "The file must be 15 MB or smaller for this MVP." }, { status: 400 });
+    if (files.length > MAX_FILES) {
+      return NextResponse.json({ error: `Attach no more than ${MAX_FILES} files per review.` }, { status: 400 });
     }
-    if (file && !allowedExtensions.has(fileExtension(file.name))) {
-      return NextResponse.json({ error: "Unsupported file type. Use PDF, Office, spreadsheet, text, or common document formats." }, { status: 400 });
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+    if (totalBytes > MAX_TOTAL_FILE_BYTES) {
+      return NextResponse.json({ error: "The combined evidence must be 30 MB or smaller." }, { status: 400 });
+    }
+    for (const file of files) {
+      if (file.size > MAX_FILE_BYTES) {
+        return NextResponse.json({ error: `${file.name} must be 15 MB or smaller.` }, { status: 400 });
+      }
+      if (!allowedExtensions.has(fileExtension(file.name))) {
+        return NextResponse.json({ error: `${file.name} is not a supported file type.` }, { status: 400 });
+      }
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(demoAnalysis(title || file?.name || "Pilot Operational Review"));
+      return NextResponse.json(demoAnalysis(title || files[0]?.name || "Pilot Operational Review"));
     }
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -222,10 +236,11 @@ Hard rules:
 Assignment title: ${title || "Operational review"}
 Business context: ${context || "No additional context supplied."}
 ${sourceText ? `Pasted source text:\n${sourceText}` : "The source is attached as a file."}
+Attached evidence (${files.length} file${files.length === 1 ? "" : "s"}): ${files.map((file) => file.name).join(", ") || "none"}
 `;
 
     const content: Array<Record<string, unknown>> = [{ type: "input_text", text: prompt }];
-    if (file) {
+    for (const file of files) {
       const bytes = Buffer.from(await file.arrayBuffer()).toString("base64");
       const mime = file.type || "application/octet-stream";
       content.push({

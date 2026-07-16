@@ -1,0 +1,181 @@
+{
+  "scenario_id": "northstar-audit-readiness-2026-07",
+  "version": "1.0.0",
+  "classification": "private engineering evaluation",
+  "synthetic": true,
+  "as_of_date": "2026-07-16",
+  "mission": "Cross-reference Northstar's mixed evidence, identify material audit-readiness concerns, preserve uncertainty, recognize clean controls, and produce a traceable leadership action plan.",
+  "expected_findings": [
+    {
+      "id": "NS-01",
+      "title": "Obsolete production drawing was used without the required revision check",
+      "severity": "high",
+      "category": "document control",
+      "direct_sources": [
+        "01_Company_and_QMS_Profile.pdf",
+        "02_NPS-PR-004_Document_Control.docx",
+        "03_IA-2026-02_Internal_Audit_Report.pdf",
+        "04_CAPA_Action_Register.xlsx",
+        "09_CC-2026-014_Customer_Complaint.pdf"
+      ],
+      "minimum_evidence": [
+        "HX-410 Rev C was effective 2026-06-10 in QMS Vault.",
+        "Lot L26-0619 used a Rev B copy printed from the legacy shared drive on 2026-06-21.",
+        "The point-of-use packet lacked a controlled-copy stamp and completed revision check."
+      ],
+      "required_uncertainty": "The evidence does not establish that the drawing difference caused the customer complaint or created nonconforming product; a product-impact review is required.",
+      "expected_response": "Block obsolete-document retrieval, inspect all points of use, complete the lot impact review, retrain supervisors, and verify zero obsolete copies over a defined period."
+    },
+    {
+      "id": "NS-02",
+      "title": "Preventive-maintenance completion or approved deferral cannot be demonstrated for two operating assets",
+      "severity": "high",
+      "category": "maintenance evidence",
+      "direct_sources": [
+        "03_IA-2026-02_Internal_Audit_Report.pdf",
+        "04_CAPA_Action_Register.xlsx",
+        "05_Management_Review_Minutes_2026-06.docx",
+        "07_PM_and_Calibration_Records.xlsx"
+      ],
+      "minimum_evidence": [
+        "HF-1500 PM was due 2026-05-31 and HF-2600 PM was due 2026-06-07.",
+        "No work order, completion evidence, or approved deferral was available.",
+        "Both assets were used after their required dates."
+      ],
+      "required_uncertainty": "Missing records do not prove that maintenance was not physically performed.",
+      "expected_response": "Inspect the assets, reconstruct or disposition the records, perform a qualified risk review, and verify migration reconciliation across two maintenance cycles."
+    },
+    {
+      "id": "NS-03",
+      "title": "An overdue torque wrench was used in final-inspection fixture setup",
+      "severity": "high",
+      "category": "monitoring and measuring resources",
+      "direct_sources": [
+        "07_PM_and_Calibration_Records.xlsx",
+        "09_CC-2026-014_Customer_Complaint.pdf"
+      ],
+      "minimum_evidence": [
+        "TW-118 calibration was due 2026-06-15 with no completion or approved deferral.",
+        "The usage log records TW-118 on lot L26-0619 on 2026-06-20.",
+        "The complaint investigation identifies the same lot and the same instrument use."
+      ],
+      "required_uncertainty": "The evidence does not establish that torque error contributed to leakage; instrument impact and affected-result validity must be evaluated.",
+      "expected_response": "Remove the instrument from service, calibrate it, evaluate prior results and affected lots, and define objective release evidence."
+    },
+    {
+      "id": "NS-04",
+      "title": "Two personnel performed affected work without recorded Revision C qualification",
+      "severity": "high",
+      "category": "competence",
+      "direct_sources": [
+        "04_CAPA_Action_Register.xlsx",
+        "05_Management_Review_Minutes_2026-06.docx",
+        "06_Training_Matrix.xlsx",
+        "09_CC-2026-014_Customer_Complaint.pdf"
+      ],
+      "minimum_evidence": [
+        "A. Flores and J. Kim have blank completion and qualification evidence for WI-410 Rev C.",
+        "Both are recorded against lot L26-0619 work.",
+        "The detailed matrix shows 75% completion for the affected population while management review reports 98%."
+      ],
+      "required_uncertainty": "A blank record may indicate missing evidence or incomplete qualification; it does not establish individual incompetence.",
+      "expected_response": "Restrict independent work until verified, reconcile the affected population, complete qualification, and observe independent jobs after training."
+    },
+    {
+      "id": "NS-05",
+      "title": "The live CAPA register contains more overdue work than leadership reporting and several weak effectiveness controls",
+      "severity": "high",
+      "category": "corrective action governance",
+      "direct_sources": [
+        "03_IA-2026-02_Internal_Audit_Report.pdf",
+        "04_CAPA_Action_Register.xlsx",
+        "05_Management_Review_Minutes_2026-06.docx"
+      ],
+      "minimum_evidence": [
+        "The register calculates four overdue open CAPAs on 2026-07-16.",
+        "Management review reports two overdue items.",
+        "C-024 has no approved effectiveness plan and several open items lack closure evidence."
+      ],
+      "required_uncertainty": "The workbook is the detailed source presented in this scenario, but ownership of the dashboard discrepancy should be confirmed.",
+      "expected_response": "Reconcile leadership reporting to the live register, assign one accountable owner per action, risk-rank the backlog, and approve measurable effectiveness criteria."
+    },
+    {
+      "id": "NS-06",
+      "title": "A repeat supplier defect has weak causal evidence and no approved escalation decision",
+      "severity": "high",
+      "category": "supplier corrective action",
+      "direct_sources": [
+        "04_CAPA_Action_Register.xlsx",
+        "05_Management_Review_Minutes_2026-06.docx",
+        "08_SCAR-2026-007_Supplier_Nonconformance.pdf"
+      ],
+      "minimum_evidence": [
+        "SCAR-2026-007 is similar to prior SCAR-2026-002.",
+        "The supplier response states operator inconsistency without supporting causal analysis.",
+        "No implementation evidence, measurable effectiveness plan, or supplier escalation decision is approved."
+      ],
+      "required_uncertainty": "Containment appears to be operating for sampled shipments; it should not be described as absent.",
+      "expected_response": "Maintain containment, require verified causal evidence and control-plan change, set acceptance criteria, and make a documented escalation or sourcing decision."
+    },
+    {
+      "id": "NS-07",
+      "title": "Related complaint, supplier, drawing, audit, and CAPA records are not governed as one controlled investigation",
+      "severity": "medium",
+      "category": "traceability and investigation",
+      "direct_sources": [
+        "04_CAPA_Action_Register.xlsx",
+        "05_Management_Review_Minutes_2026-06.docx",
+        "08_SCAR-2026-007_Supplier_Nonconformance.pdf",
+        "09_CC-2026-014_Customer_Complaint.pdf"
+      ],
+      "minimum_evidence": [
+        "CC-2026-014 concerns the same product and supplier lot as SCAR-2026-007.",
+        "The complaint record notes possible similarity but records no SCAR or CAPA reference.",
+        "Management review defers the linkage decision and no one controlled cause investigation is identified."
+      ],
+      "required_uncertainty": "The records support plausible relationships, not proven common causation.",
+      "expected_response": "Appoint one investigation owner, cross-link all records, develop and test causal hypotheses, and preserve separate dispositions where evidence differs."
+    },
+    {
+      "id": "NS-08",
+      "title": "Management-review actions are not consistently specific, singularly owned, or time bound",
+      "severity": "medium",
+      "category": "leadership accountability",
+      "direct_sources": [
+        "05_Management_Review_Minutes_2026-06.docx"
+      ],
+      "minimum_evidence": [
+        "Several owners are groups such as Quality / Operations or HR / Production.",
+        "Due dates include Before audit, As needed, Biweekly, and Next delivery.",
+        "The decision to continue production lacks a completed risk review and explicit decision owner."
+      ],
+      "required_uncertainty": "The meeting record may be supplemented elsewhere; Pilot should state that no such supplement was provided.",
+      "expected_response": "Convert each commitment into one accountable owner, a calendar date, required evidence, and a named approver."
+    }
+  ],
+  "negative_controls": [
+    {
+      "id": "NC-01",
+      "record": "GR-882 / CAL-26-188",
+      "expected_interpretation": "Current, traceable calibration evidence; not a corrective-action finding."
+    },
+    {
+      "id": "NC-02",
+      "record": "CAPA C-021",
+      "expected_interpretation": "Properly closed with implementation and 60-day effectiveness evidence; may be cited as a strong control."
+    },
+    {
+      "id": "NC-03",
+      "record": "Blue Ridge Anodizing supplier certificate",
+      "expected_interpretation": "Current approved-supplier evidence for a different product scope; not relevant to the Apex / HX-410 defect."
+    }
+  ],
+  "forbidden_overclaims": [
+    "Northstar is or is not ISO 9001 compliant.",
+    "The obsolete drawing caused the customer complaint.",
+    "Preventive maintenance was definitely not performed.",
+    "The two employees are incompetent.",
+    "The supplier is solely responsible for the customer leak.",
+    "The clean calibration, closed CAPA, or unrelated approved supplier is nonconforming."
+  ]
+}

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import {
-  AlertTriangle, ArrowRight, Bot, BrainCircuit, CheckCircle2, ChevronRight,
-  ClipboardCheck, Clock3, Download, FileText, Gauge, Menu, PanelLeftClose,
+  AlertTriangle, Archive, ArrowRight, Bot, BrainCircuit, CheckCircle2, ChevronRight,
+  ClipboardCheck, Clock3, Download, FileText, Files, Gauge, Menu, PanelLeftClose,
   Printer, RefreshCw, ShieldCheck, Sparkles, Target, UploadCloud, Users, X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -12,6 +12,12 @@ import { ActionBoard } from "@/components/action-board";
 import { CloudAccount } from "@/components/cloud-workspace";
 
 const sampleSource = `Internal audit observations\n\n1. Released manufacturing drawings are stored on a shared drive, but the documented process still identifies Lotus Notes as the controlled source.\n2. Preventive maintenance evidence was not available for the Höfler Rapid 1500 and 2600.\n3. Seven observations were discussed in a planning meeting, but a single action register with owners, due dates, and effectiveness checks has not yet been issued.\n4. Leadership agreed to meet every two weeks to drive improvement.\n5. The certification audit target is March 2027.`;
+
+const northstarMission = `Review Northstar Precision Systems' audit-readiness evidence.
+
+Cross-reference every attached document. Identify what genuinely requires leadership attention, cite the exact file and record ID for each conclusion, and produce a prioritized action plan with accountable owners, calendar dates, and objective closure evidence.
+
+Distinguish direct evidence from inference. Call out contradictions and uncertainty where the evidence is incomplete. Some records are intentionally complete and current, so do not invent nonconformities.`;
 
 const severityRank: Record<Severity, number> = { critical: 4, high: 3, medium: 2, low: 1 };
 
@@ -107,7 +113,7 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [context, setContext] = useState("");
   const [sourceText, setSourceText] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [analysis, setAnalysis] = useState<PilotAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -120,7 +126,7 @@ export default function Home() {
     }
   }, []);
 
-  const canAnalyze = useMemo(() => Boolean(sourceText.trim() || file), [sourceText, file]);
+  const canAnalyze = useMemo(() => Boolean(sourceText.trim() || files.length), [sourceText, files]);
 
   async function analyze(event: FormEvent) {
     event.preventDefault();
@@ -131,7 +137,7 @@ export default function Home() {
     form.set("title", title);
     form.set("context", context);
     form.set("sourceText", sourceText);
-    if (file) form.set("file", file);
+    files.forEach((file) => form.append("files", file));
     try {
       const response = await fetch("/api/analyze", { method: "POST", body: form });
       const responseText = await response.text();
@@ -161,8 +167,23 @@ export default function Home() {
   }
 
   function reset() {
-    setAnalysis(null); setTitle(""); setContext(""); setSourceText(""); setFile(null); setError("");
+    setAnalysis(null); setTitle(""); setContext(""); setSourceText(""); setFiles([]); setError("");
     window.localStorage.removeItem("qmspilot:last-analysis");
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function loadNorthstar() {
+    setTitle("Northstar audit-readiness review");
+    setContext("Prepare a traceable, leadership-ready action brief for the 15 September 2026 surveillance audit.");
+    setSourceText(northstarMission);
+    setFiles([]);
+    setError("");
+    if (fileRef.current) fileRef.current.value = "";
+    window.setTimeout(() => document.getElementById("northstar-assignment")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  }
+
+  function removeFile(index: number) {
+    setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index));
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -212,23 +233,43 @@ export default function Home() {
 
         <div className="workspace" id="mission">
           <section className="page-intro">
-            <div><p className="eyebrow">AI Chief of Staff · MVP 01</p><h1>Good work starts with a clear mission.</h1><p>Give Pilot the evidence. Get back the gaps, risks, decisions, owners, due dates, and executive action brief.</p></div>
+            <div><p className="eyebrow">AI Chief of Staff · Pilot 1.1</p><h1>Good work starts with a clear mission.</h1><p>Give Pilot the evidence. Get back the gaps, risks, decisions, owners, due dates, and executive action brief.</p></div>
             <div className="approval-note"><ShieldCheck /><div><strong>You remain the decision-maker.</strong><span>Pilot prepares and recommends. Nothing external happens without approval.</span></div></div>
           </section>
 
-          <form className="mission-card" onSubmit={analyze}>
-            <div className="mission-head"><div className="pilot-mark"><Sparkles /></div><div><p className="eyebrow">New assignment</p><h2>What should Pilot review?</h2></div><button type="button" className="sample-button" onClick={() => { setTitle("ISO Internal Audit Follow-up"); setContext("Prepare a practical action plan for leadership and the biweekly improvement cadence."); setSourceText(sampleSource); setFile(null); if (fileRef.current) fileRef.current.value = ""; }}>Load example</button></div>
+          <section className="scenario-lab" aria-labelledby="northstar-title">
+            <div className="scenario-copy">
+              <span className="scenario-badge"><Sparkles />Synthetic validation lab</span>
+              <p className="eyebrow">Northstar Precision Systems</p>
+              <h2 id="northstar-title">Put Pilot through a real cross-document test.</h2>
+              <p>A fictional manufacturer, mixed evidence formats, deliberate contradictions, and clean controls. Safe for product testing—no real customer data.</p>
+              <div className="scenario-features">
+                <span><Files /><strong>10 evidence files</strong>PDF, Word, and Excel</span>
+                <span><Target /><strong>Cross-document reasoning</strong>Trace conflicts to source records</span>
+                <span><ShieldCheck /><strong>False-positive controls</strong>Not every record is a problem</span>
+              </div>
+            </div>
+            <div className="scenario-actions">
+              <a className="scenario-secondary" href="/scenarios/northstar/northstar-evidence-pack.zip" download><Archive />Download evidence pack</a>
+              <button className="scenario-primary" type="button" onClick={loadNorthstar}><Sparkles />Load Northstar mission<ArrowRight /></button>
+              <small>Download, unzip, then attach evidence files 01–10 below.</small>
+            </div>
+          </section>
+
+          <form className="mission-card" id="northstar-assignment" onSubmit={analyze}>
+            <div className="mission-head"><div className="pilot-mark"><Sparkles /></div><div><p className="eyebrow">New assignment</p><h2>What should Pilot review?</h2></div><button type="button" className="sample-button" onClick={() => { setTitle("ISO Internal Audit Follow-up"); setContext("Prepare a practical action plan for leadership and the biweekly improvement cadence."); setSourceText(sampleSource); setFiles([]); if (fileRef.current) fileRef.current.value = ""; }}>Load simple example</button></div>
             <div className="form-grid">
               <label><span>Assignment title</span><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Example: Internal audit follow-up" maxLength={120} /></label>
               <label><span>Business context</span><input value={context} onChange={(e) => setContext(e.target.value)} placeholder="What outcome do you need?" maxLength={400} /></label>
             </div>
             <label className="source-label"><span>Source information</span><textarea value={sourceText} onChange={(e) => setSourceText(e.target.value)} placeholder="Paste audit notes, customer requirements, meeting notes, a process description, or an improvement opportunity..." rows={8} /></label>
             <div className="mission-footer">
-              <label className="upload-button"><UploadCloud /><span>{file ? file.name : "Attach a document"}</span><input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.tsv,.txt,.md,.json,.html,.xml,.rtf,.odt" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></label>
-              {file && <button type="button" className="remove-file" onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ""; }}><X />Remove</button>}
-              <span className="file-note">PDF, Office, spreadsheet, or text · 15 MB max</span>
+              <label className="upload-button"><UploadCloud /><span>{files.length ? `${files.length} evidence file${files.length === 1 ? "" : "s"} attached` : "Attach evidence files"}</span><input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.tsv,.txt,.md,.json,.html,.xml,.rtf,.odt" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} /></label>
+              {files.length > 0 && <button type="button" className="remove-file" onClick={() => { setFiles([]); if (fileRef.current) fileRef.current.value = ""; }}><X />Remove all</button>}
+              <span className="file-note">Up to 12 files · 15 MB each · 30 MB total</span>
               <button className="analyze-button" disabled={!canAnalyze || loading} type="submit">{loading ? <><RefreshCw className="spin" />Pilot is reviewing...</> : <><BrainCircuit />Analyze and build action brief<ArrowRight /></>}</button>
             </div>
+            {files.length > 0 && <div className="file-selection" aria-label="Attached evidence files">{files.map((attachedFile, index) => <span key={`${attachedFile.name}-${attachedFile.lastModified}`}><FileText /><span><strong>{attachedFile.name}</strong><small>{Math.max(1, Math.round(attachedFile.size / 1024))} KB</small></span><button type="button" onClick={() => removeFile(index)} aria-label={`Remove ${attachedFile.name}`}><X /></button></span>)}</div>}
             {error && <div className="error-message"><AlertTriangle />{error}</div>}
           </form>
 
