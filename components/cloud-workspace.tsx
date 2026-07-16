@@ -109,16 +109,19 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
     if (!supabase || !user) return;
 
+    const activeClient = supabase;
+    const activeUser = user;
+
     let active = true;
 
     async function prepareWorkspace() {
       setStatus("loading");
       setSyncError("");
 
-      const { data: membership, error: membershipError } = await supabase
+      const { data: membership, error: membershipError } = await activeClient
         .from("organization_members")
         .select("organization_id")
-        .eq("user_id", user.id)
+        .eq("user_id", activeUser.id)
         .limit(1)
         .maybeSingle();
 
@@ -127,15 +130,15 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
       let nextOrganizationId = membership?.organization_id ?? null;
 
       if (!nextOrganizationId) {
-        const { data, error } = await supabase.rpc("create_organization", {
+        const { data, error } = await activeClient.rpc("create_organization", {
           p_name: "QMSPilot",
-          p_slug: "qmspilot-" + user.id.slice(0, 8),
+          p_slug: "qmspilot-" + activeUser.id.slice(0, 8),
         });
         if (error) throw error;
         nextOrganizationId = data;
       }
 
-      const { data: organization, error: organizationError } = await supabase
+      const { data: organization, error: organizationError } = await activeClient
         .from("organizations")
         .select("name")
         .eq("id", nextOrganizationId)
