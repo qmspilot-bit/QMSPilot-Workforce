@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { PilotAnalysis, Priority, Severity } from "@/lib/types";
+import { ActionBoard } from "@/components/action-board";
 
 const sampleSource = `Internal audit observations\n\n1. Released manufacturing drawings are stored on a shared drive, but the documented process still identifies Lotus Notes as the controlled source.\n2. Preventive maintenance evidence was not available for the Höfler Rapid 1500 and 2600.\n3. Seven observations were discussed in a planning meeting, but a single action register with owners, due dates, and effectiveness checks has not yet been issued.\n4. Leadership agreed to meet every two weeks to drive improvement.\n5. The certification audit target is March 2027.`;
 
@@ -85,35 +86,7 @@ function Results({ analysis }: { analysis: PilotAnalysis }) {
         </div>
       </section>
 
-      <section className="panel">
-        <div className="section-heading"><div><p className="eyebrow">02 / Action board</p><h3>Who does what by when</h3></div><span>Human approval is required before assignment or external action.</span></div>
-        <div className="action-table-wrap">
-          <table className="action-table">
-            <thead><tr><th>Action</th><th>Owner</th><th>Agent</th><th>Priority</th><th>Due</th><th>Verification</th></tr></thead>
-            <tbody>{analysis.actions.map((action) => (
-              <tr key={action.id}>
-                <td><span className="action-id">{action.id}</span><strong>{action.title}</strong><small>{action.rationale}</small></td>
-                <td>{action.owner}</td>
-                <td><span className="agent-badge"><Bot size={14} />{action.recommendedAgent}</span></td>
-                <td><Pill value={action.priority} /></td>
-                <td className="date-cell"><Clock3 size={14} />{action.dueDate}</td>
-                <td>{action.verification}</td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-      </section>
-
-      <div className="two-column">
-        <section className="panel compact-panel">
-          <div className="section-heading"><div><p className="eyebrow">03 / Decisions</p><h3>Donald’s decision queue</h3></div></div>
-          <ol className="decision-list">{analysis.decisionsNeeded.map((decision, i) => <li key={decision}><span>{i + 1}</span>{decision}</li>)}</ol>
-        </section>
-        <section className="panel compact-panel">
-          <div className="section-heading"><div><p className="eyebrow">04 / Risk</p><h3>Watchlist</h3></div></div>
-          <div className="risk-list">{analysis.risks.map((risk) => <article key={risk.risk}><Pill value={risk.level} /><div><strong>{risk.risk}</strong><p>{risk.mitigation}</p></div></article>)}</div>
-        </section>
-      </div>
+      <ActionBoard analysis={analysis} />
 
       <section className="panel briefing-panel">
         <div className="section-heading"><div><p className="eyebrow">05 / Briefing rhythm</p><h3>What happens next</h3></div></div>
