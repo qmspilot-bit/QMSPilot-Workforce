@@ -160,10 +160,24 @@ export default function Home() {
     if (file) form.set("file", file);
     try {
       const response = await fetch("/api/analyze", { method: "POST", body: form });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Pilot could not complete the review.");
-      setAnalysis(payload);
-      window.localStorage.setItem("qmspilot:last-analysis", JSON.stringify(payload));
+      const responseText = await response.text();
+      let payload: PilotAnalysis | { error?: string };
+      try {
+        payload = JSON.parse(responseText) as PilotAnalysis | { error?: string };
+      } catch {
+        throw new Error(
+          response.ok
+            ? "Pilot returned an unreadable response. Please try again."
+            : "Pilot's analysis service was interrupted. Please try again.",
+        );
+      }
+      if (!response.ok) {
+        const message = "error" in payload ? payload.error : undefined;
+        throw new Error(message || "Pilot could not complete the review.");
+      }
+      const completedAnalysis = payload as PilotAnalysis;
+      setAnalysis(completedAnalysis);
+      window.localStorage.setItem("qmspilot:last-analysis", JSON.stringify(completedAnalysis));
       window.setTimeout(() => document.getElementById("pilot-results")?.scrollIntoView({ behavior: "smooth" }), 120);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Pilot could not complete the review.");
