@@ -325,10 +325,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_organization: {
-        Args: { p_name: string; p_slug: string }
-        Returns: string
-      }
+      [_ in never]: never
     }
     Enums: {
       action_priority: "urgent" | "high" | "normal" | "low"
