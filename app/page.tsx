@@ -9,6 +9,7 @@ import {
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { PilotAnalysis, Priority, Severity } from "@/lib/types";
 import { ActionBoard } from "@/components/action-board";
+import { CloudAccount } from "@/components/cloud-workspace";
 
 const sampleSource = `Internal audit observations\n\n1. Released manufacturing drawings are stored on a shared drive, but the documented process still identifies Lotus Notes as the controlled source.\n2. Preventive maintenance evidence was not available for the Höfler Rapid 1500 and 2600.\n3. Seven observations were discussed in a planning meeting, but a single action register with owners, due dates, and effectiveness checks has not yet been issued.\n4. Leadership agreed to meet every two weeks to drive improvement.\n5. The certification audit target is March 2027.`;
 
@@ -204,6 +205,7 @@ export default function Home() {
             {analysis && <button className="quiet-button" onClick={download}><Download />Export</button>}
             {analysis && <button className="quiet-button" onClick={() => window.print()}><Printer />Print</button>}
             {analysis && <button className="quiet-button" onClick={reset}><RefreshCw />New review</button>}
+            <CloudAccount />
             <span className="status-chip"><i />Pilot online</span>
           </div>
         </header>

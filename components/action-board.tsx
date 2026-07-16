@@ -3,6 +3,7 @@
 import { Bot, CheckCircle2, Clock3, Save, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { PilotAnalysis } from "@/lib/types";
+import { useCloudWorkspace } from "@/components/cloud-workspace";
 
 type ActionStatus = "proposed" | "approved" | "in-progress" | "blocked" | "done";
 type DecisionStatus = "pending" | "approved" | "deferred";
@@ -76,9 +77,14 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
   const [decisions, setDecisions] = useState<DecisionState>(defaultDecisions);
   const [ready, setReady] = useState(false);
   const [savedAt, setSavedAt] = useState("");
+  const cloud = useCloudWorkspace();
+  const [cloudAnalysisId, setCloudAnalysisId] = useState<string | null>(null);
+  const [cloudLoaded, setCloudLoaded] = useState(false);
 
   useEffect(() => {
     setReady(false);
+    setCloudAnalysisId(null);
+    setCloudLoaded(false);
     setBoard(defaultBoard);
     setDecisions(defaultDecisions);
 
@@ -103,6 +109,57 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
       new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date()),
     );
   }, [board, decisions, ready, storageKey]);
+
+  useEffect(() => {
+    if (!ready || cloud.status !== "ready") {
+      setCloudLoaded(false);
+      return;
+    }
+
+    let active = true;
+
+    async function connectWorkboard() {
+      const analysisId = await cloud.ensureAnalysis(analysis);
+      if (!active || !analysisId) return;
+
+      setCloudAnalysisId(analysisId);
+      const stored = await cloud.loadWorkboard(analysisId);
+      if (!active) return;
+
+      if (stored && Object.keys(stored.actions).length > 0) {
+        setBoard((current) => ({ ...current, ...stored.actions }));
+      }
+      if (stored && Object.keys(stored.decisions).length > 0) {
+        setDecisions((current) => ({ ...current, ...stored.decisions }));
+      }
+
+      setCloudLoaded(true);
+    }
+
+    connectWorkboard().catch((error) => {
+      console.error("Pilot cloud load failed", error);
+      if (active) setCloudLoaded(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [analysis, cloud.ensureAnalysis, cloud.loadWorkboard, cloud.status, ready]);
+
+  useEffect(() => {
+    if (!ready || !cloudLoaded || !cloudAnalysisId || cloud.status !== "ready") return;
+
+    const timeout = window.setTimeout(() => {
+      cloud.saveWorkboard(cloudAnalysisId, analysis, board, decisions).catch((error) => {
+        console.error("Pilot cloud save failed", error);
+      });
+    }, 700);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    analysis, board, cloud.saveWorkboard, cloud.status, cloudAnalysisId,
+    cloudLoaded, decisions, ready,
+  ]);
 
   function updateAction(id: string, patch: Partial<BoardItem>) {
     setBoard((current) => ({
@@ -138,11 +195,23 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
             <p className="eyebrow">02 / Action board</p>
             <h3>Approve the work. Track the outcome.</h3>
           </div>
-          <div className="local-save-note">
+          <div className={cloud.status === "ready" ? "local-save-note cloud-save-note" : "local-save-note"}>
             <Save size={15} />
             <span>
-              <strong>{savedAt ? "Saved at " + savedAt : "Saved automatically"}</strong>
-              This first version stays in this browser.
+              <strong>
+                {cloud.status === "ready"
+                  ? cloud.lastSync
+                    ? "Cloud saved at " + cloud.lastSync
+                    : cloudLoaded
+                      ? "Cloud protection active"
+                      : "Connecting secure storage..."
+                  : savedAt
+                    ? "Saved in this browser at " + savedAt
+                    : "Saved automatically"}
+              </strong>
+              {cloud.status === "ready"
+                ? "Protected in " + (cloud.organizationName || "your QMSPilot workspace") + "."
+                : "Sign in to Secure cloud to protect this work across devices."}
             </span>
           </div>
         </div>
