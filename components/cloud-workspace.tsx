@@ -127,15 +127,9 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (membershipError) throw membershipError;
 
-      let nextOrganizationId = membership?.organization_id ?? null;
-
+      const nextOrganizationId = membership?.organization_id;
       if (!nextOrganizationId) {
-        const { data, error } = await activeClient.rpc("create_organization", {
-          p_name: "QMSPilot",
-          p_slug: "qmspilot-" + activeUser.id.slice(0, 8),
-        });
-        if (error) throw error;
-        nextOrganizationId = data;
+        throw new Error("Your secure QMSPilot workspace is not available yet.");
       }
 
       const { data: organization, error: organizationError } = await activeClient
