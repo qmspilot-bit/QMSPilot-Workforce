@@ -163,6 +163,7 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
   const [closureBusy, setClosureBusy] = useState<"" | "upload" | "review">("");
   const [closureError, setClosureError] = useState("");
   const handoffPanelRef = useRef<HTMLElement>(null);
+  const closureGateRef = useRef<HTMLElement>(null);
   const closureFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -266,11 +267,6 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     setClosureEvidenceNote("");
     setClosureError("");
     if (closureFileRef.current) closureFileRef.current.value = "";
-    const frame = window.requestAnimationFrame(() => {
-      handoffPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      handoffPanelRef.current?.focus({ preventScroll: true });
-    });
-    return () => window.cancelAnimationFrame(frame);
   }, [selectedActionId]);
 
   function updateAction(id: string, patch: Partial<BoardItem>) {
@@ -287,16 +283,30 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     }));
   }
 
+  function openActionPanel(id: string) {
+    const item = board[id] ?? defaultBoard[id];
+    setSelectedActionId(id);
+    setCopyState("idle");
+    setWorkProductError("");
+    setClosureError("");
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const target = item.workProductReviewedAt ? closureGateRef.current : handoffPanelRef.current;
+        target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        target?.focus({ preventScroll: true });
+      });
+    });
+  }
+
   function requestStatusChange(id: string, status: ActionStatus) {
     const currentStatus = board[id]?.status ?? "proposed";
     if (currentStatus === "proposed" && (status === "approved" || status === "in-progress")) {
-      setSelectedActionId(id);
-      setCopyState("idle");
-      setWorkProductError("");
+      openActionPanel(id);
       return;
     }
     if (status === "done" && currentStatus !== "done") {
-      setSelectedActionId(id);
+      openActionPanel(id);
       setClosureError("Upload completion evidence, obtain Atlas's review, and record the human closure decision here.");
       return;
     }
@@ -644,11 +654,7 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                           className="handoff-link"
                           aria-expanded={selectedActionId === action.id}
                           aria-controls="action-handoff-panel"
-                          onClick={() => {
-                            setSelectedActionId(action.id);
-                            setCopyState("idle");
-                            setWorkProductError("");
-                          }}
+                          onClick={() => openActionPanel(action.id)}
                         >
                           {item.status === "proposed"
                             ? "Review handoff"
@@ -813,7 +819,7 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
             )}
 
             {selectedItem.workProductReviewedAt && (
-              <article className="closure-gate">
+              <article className="closure-gate" ref={closureGateRef} tabIndex={-1}>
                 <div className="closure-gate-heading">
                   <div className="closure-gate-icon"><ShieldCheck /></div>
                   <div>
@@ -829,6 +835,8 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                   <span className={selectedItem.closureReview ? "closure-step-complete" : ""}><Bot />Atlas reviewed</span>
                   <span className={selectedItem.status === "done" ? "closure-step-complete" : ""}><UserCheck />Human closed</span>
                 </div>
+
+                {closureError && <p className="work-product-error closure-gate-error">{closureError}</p>}
 
                 <section className="closure-section">
                   <div className="closure-section-heading">
@@ -874,7 +882,11 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                         onClick={() => uploadClosureEvidence(selectedAction.id)}
                       >
                         {closureBusy === "upload" ? <RefreshCw className="spin" /> : <UploadCloud />}
-                        {closureBusy === "upload" ? "Uploading evidence" : "Upload to audit trail"}
+                        {closureBusy === "upload"
+                          ? "Uploading evidence"
+                          : closureFiles.length
+                            ? `Upload ${closureFiles.length} selected file${closureFiles.length === 1 ? "" : "s"} now`
+                            : "Choose files first"}
                       </button>
                     </div>
                   )}
@@ -963,8 +975,6 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                     </span>
                   </div>
                 )}
-
-                {closureError && <p className="work-product-error">{closureError}</p>}
               </article>
             )}
 
