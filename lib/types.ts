@@ -2,6 +2,19 @@ export type Severity = "critical" | "high" | "medium" | "low";
 export type Priority = "urgent" | "high" | "normal" | "low";
 export type AgentName = "Pilot" | "Atlas" | "Nexus" | "Forge";
 
+export type WorkProduct = {
+  title: string;
+  executiveSummary: string;
+  workPerformed: string[];
+  evidenceConsidered: string[];
+  deliverable: string;
+  limitations: string[];
+  recommendedNextSteps: string[];
+  closureEvidence: string[];
+  confidence: "high" | "medium" | "low";
+  preparedBy: AgentName;
+};
+
 export type PilotAnalysis = {
   mode: "live" | "demo";
   generatedAt: string;

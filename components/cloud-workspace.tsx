@@ -6,15 +6,19 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useState,
   type ReactNode,
 } from "react";
-import type { PilotAnalysis } from "@/lib/types";
+import type { PilotAnalysis, WorkProduct } from "@/lib/types";
 import type { Json } from "@/lib/supabase/database.types";
 import { createClient, isCloudConfigured } from "@/lib/supabase/client";
 
 export type CloudBoardItem = {
-  status: "proposed" | "approved" | "in-progress" | "blocked" | "done";
+  status: "proposed" | "approved" | "in-progress" | "ready-for-review" | "blocked" | "done";
   owner: string;
   dueDate: string;
   note: string;
+  workProduct: WorkProduct | null;
+  workProductGeneratedAt: string;
+  workProductReviewedAt: string;
+  workProductReviewedBy: string;
 };
 
 export type CloudDecisionItem = {
@@ -32,6 +36,7 @@ type CloudWorkspaceValue = {
   syncError: string;
   sendMagicLink: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  getAccessToken: () => Promise<string | null>;
   ensureAnalysis: (analysis: PilotAnalysis) => Promise<string | null>;
   loadWorkboard: (analysisId: string) => Promise<{
     actions: Record<string, CloudBoardItem>;
@@ -52,11 +57,17 @@ function cloudAnalysisKey(generatedAt: string) {
 }
 
 function toDatabaseActionStatus(status: CloudBoardItem["status"]) {
-  return status === "in-progress" ? "in_progress" as const : status;
+  if (status === "in-progress") return "in_progress" as const;
+  if (status === "ready-for-review") return "ready_for_review" as const;
+  return status;
 }
 
-function fromDatabaseActionStatus(status: "proposed" | "approved" | "in_progress" | "blocked" | "done") {
-  return status === "in_progress" ? "in-progress" as const : status;
+function fromDatabaseActionStatus(
+  status: "proposed" | "approved" | "in_progress" | "ready_for_review" | "blocked" | "done",
+) {
+  if (status === "in_progress") return "in-progress" as const;
+  if (status === "ready_for_review") return "ready-for-review" as const;
+  return status;
 }
 
 export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
@@ -175,6 +186,14 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
+  const getAccessToken = useCallback(async () => {
+    const supabase = createClient();
+    if (!supabase) return null;
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return data.session?.access_token ?? null;
+  }, []);
+
   const ensureAnalysis = useCallback(async (analysis: PilotAnalysis) => {
     const supabase = createClient();
     if (!supabase || !user || !organizationId) return null;
@@ -207,7 +226,7 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
     const [actionsResult, decisionsResult] = await Promise.all([
       supabase
         .from("work_items")
-        .select("action_key, owner_name, status, due_date, progress_note")
+        .select("action_key, owner_name, status, due_date, progress_note, work_product, work_product_generated_at, work_product_reviewed_at, work_product_reviewed_by")
         .eq("organization_id", organizationId)
         .eq("analysis_id", analysisId),
       supabase
@@ -228,6 +247,10 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
           owner: item.owner_name,
           dueDate: item.due_date ?? "",
           note: item.progress_note,
+          workProduct: item.work_product as unknown as WorkProduct | null,
+          workProductGeneratedAt: item.work_product_generated_at ?? "",
+          workProductReviewedAt: item.work_product_reviewed_at ?? "",
+          workProductReviewedBy: item.work_product_reviewed_by ?? "",
         },
       ]),
     );
@@ -268,6 +291,10 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
         recommended_agent: action.recommendedAgent,
         rationale: action.rationale,
         verification: action.verification,
+        work_product: item?.workProduct ? item.workProduct as unknown as Json : null,
+        work_product_generated_at: item?.workProductGeneratedAt || null,
+        work_product_reviewed_at: item?.workProductReviewedAt || null,
+        work_product_reviewed_by: item?.workProductReviewedBy || null,
         created_by: user.id,
       };
     });
@@ -316,11 +343,12 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
     syncError,
     sendMagicLink,
     signOut,
+    getAccessToken,
     ensureAnalysis,
     loadWorkboard,
     saveWorkboard,
   }), [
-    configured, ensureAnalysis, lastSync, loadWorkboard, organizationId,
+    configured, ensureAnalysis, getAccessToken, lastSync, loadWorkboard, organizationId,
     organizationName, saveWorkboard, sendMagicLink, signOut, status, syncError, user,
   ]);
 

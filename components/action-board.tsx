@@ -1,13 +1,14 @@
 "use client";
 
 import {
-  ArrowRight, Bot, CheckCircle2, Clipboard, Clock3, Save, ShieldCheck, UserCheck, X,
+  ArrowRight, Bot, CheckCircle2, Clipboard, Clock3, FileCheck2, RefreshCw, RotateCcw,
+  Save, ShieldCheck, UserCheck, X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PilotAnalysis } from "@/lib/types";
+import type { PilotAnalysis, WorkProduct } from "@/lib/types";
 import { useCloudWorkspace } from "@/components/cloud-workspace";
 
-type ActionStatus = "proposed" | "approved" | "in-progress" | "blocked" | "done";
+type ActionStatus = "proposed" | "approved" | "in-progress" | "ready-for-review" | "blocked" | "done";
 type DecisionStatus = "pending" | "approved" | "deferred";
 
 type BoardItem = {
@@ -15,6 +16,10 @@ type BoardItem = {
   owner: string;
   dueDate: string;
   note: string;
+  workProduct: WorkProduct | null;
+  workProductGeneratedAt: string;
+  workProductReviewedAt: string;
+  workProductReviewedBy: string;
 };
 
 type DecisionItem = {
@@ -53,6 +58,7 @@ const actionStatuses: Array<{ value: ActionStatus; label: string }> = [
   { value: "proposed", label: "Proposed" },
   { value: "approved", label: "Approved" },
   { value: "in-progress", label: "In progress" },
+  { value: "ready-for-review", label: "Ready for review" },
   { value: "blocked", label: "Blocked" },
   { value: "done", label: "Done" },
 ];
@@ -72,6 +78,10 @@ function makeDefaultBoard(analysis: PilotAnalysis): BoardState {
         owner: action.owner,
         dueDate: action.dueDate,
         note: "",
+        workProduct: null,
+        workProductGeneratedAt: "",
+        workProductReviewedAt: "",
+        workProductReviewedBy: "",
       },
     ]),
   );
@@ -87,12 +97,13 @@ function makeDefaultDecisions(analysis: PilotAnalysis): DecisionState {
 }
 
 function StatusPill({ status }: { status: ActionStatus | DecisionStatus }) {
-  return <span className={"workflow-status workflow-status-" + status}>{status.replace("-", " ")}</span>;
+  return <span className={"workflow-status workflow-status-" + status}>{status.replaceAll("-", " ")}</span>;
 }
 
 function handoffStateLabel(status: ActionStatus, agent: string) {
   if (status === "approved") return `Assignment approved for ${agent}`;
   if (status === "in-progress") return `${agent} preparation is in progress`;
+  if (status === "ready-for-review") return `${agent}'s work product is ready for human review`;
   if (status === "blocked") return "Assignment blocked pending human input";
   if (status === "done") return "Work marked complete after human review";
   return "Awaiting human approval";
@@ -111,6 +122,8 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
   const [cloudLoaded, setCloudLoaded] = useState(false);
   const [selectedActionId, setSelectedActionId] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const [generatingActionId, setGeneratingActionId] = useState("");
+  const [workProductError, setWorkProductError] = useState("");
   const handoffPanelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -119,6 +132,8 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     setCloudLoaded(false);
     setSelectedActionId("");
     setCopyState("idle");
+    setGeneratingActionId("");
+    setWorkProductError("");
     setBoard(defaultBoard);
     setDecisions(defaultDecisions);
 
@@ -126,7 +141,14 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
       const stored = window.localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored) as StoredWorkboard;
-        if (parsed.actions) setBoard({ ...defaultBoard, ...parsed.actions });
+        if (parsed.actions) {
+          setBoard(Object.fromEntries(
+            Object.entries(defaultBoard).map(([id, item]) => [
+              id,
+              { ...item, ...(parsed.actions?.[id] ?? {}) },
+            ]),
+          ));
+        }
         if (parsed.decisions) setDecisions({ ...defaultDecisions, ...parsed.decisions });
       }
     } catch {
@@ -223,6 +245,12 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     if (currentStatus === "proposed" && (status === "approved" || status === "in-progress")) {
       setSelectedActionId(id);
       setCopyState("idle");
+      setWorkProductError("");
+      return;
+    }
+    if (status === "done" && currentStatus !== "done") {
+      setSelectedActionId(id);
+      setWorkProductError("Review the specialist work product and use Approve completion to close this action.");
       return;
     }
     updateAction(id, { status });
@@ -232,6 +260,81 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     const item = board[id] ?? defaultBoard[id];
     if (!item.owner.trim() || !item.dueDate) return;
     updateAction(id, { status: "approved" });
+    setWorkProductError("");
+  }
+
+  async function prepareWorkProduct(id: string) {
+    const action = analysis.actions.find((candidate) => candidate.id === id);
+    const item = board[id] ?? defaultBoard[id];
+    if (!action || !item.owner.trim() || !item.dueDate || generatingActionId) return;
+
+    setGeneratingActionId(id);
+    setWorkProductError("");
+    updateAction(id, { status: "in-progress" });
+
+    try {
+      const token = await cloud.getAccessToken();
+      if (!token) throw new Error("Sign in to Secure cloud before assigning specialist work.");
+
+      const response = await fetch("/api/work-product", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action,
+          assignment: {
+            owner: item.owner,
+            dueDate: item.dueDate,
+            progressNote: item.note,
+          },
+          analysis: {
+            title: analysis.title,
+            sourceOverview: analysis.sourceOverview,
+            executiveSummary: analysis.executiveSummary,
+            keyFindings: analysis.keyFindings,
+            risks: analysis.risks,
+            brief: analysis.brief,
+          },
+        }),
+      });
+      const payload = await response.json() as WorkProduct & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "The specialist work product could not be prepared.");
+
+      updateAction(id, {
+        status: "ready-for-review",
+        workProduct: payload,
+        workProductGeneratedAt: new Date().toISOString(),
+        workProductReviewedAt: "",
+        workProductReviewedBy: "",
+      });
+    } catch (error) {
+      updateAction(id, { status: "approved" });
+      setWorkProductError(error instanceof Error ? error.message : "The specialist work product could not be prepared.");
+    } finally {
+      setGeneratingActionId("");
+    }
+  }
+
+  function returnForRevision(id: string) {
+    updateAction(id, {
+      status: "approved",
+      workProductReviewedAt: "",
+      workProductReviewedBy: "",
+    });
+    setWorkProductError("");
+  }
+
+  function approveCompletion(id: string) {
+    const item = board[id] ?? defaultBoard[id];
+    if (item.status !== "ready-for-review" || !item.workProduct || !cloud.user) return;
+    updateAction(id, {
+      status: "done",
+      workProductReviewedAt: new Date().toISOString(),
+      workProductReviewedBy: cloud.user.id,
+    });
+    setWorkProductError("");
   }
 
   async function copyWorkPacket(id: string) {
@@ -266,11 +369,12 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
       const status = board[action.id]?.status ?? "proposed";
       if (status === "proposed") summary.proposed += 1;
       if (status === "approved" || status === "in-progress") summary.active += 1;
+      if (status === "ready-for-review") summary.ready += 1;
       if (status === "blocked") summary.blocked += 1;
       if (status === "done") summary.done += 1;
       return summary;
     },
-    { proposed: 0, active: 0, blocked: 0, done: 0 },
+    { proposed: 0, active: 0, ready: 0, blocked: 0, done: 0 },
   );
 
   const selectedAction = analysis.actions.find((action) => action.id === selectedActionId);
@@ -311,6 +415,7 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
         <div className="board-summary" aria-label="Action status summary">
           <div><span>Awaiting approval</span><strong>{counts.proposed}</strong></div>
           <div><span>Approved or active</span><strong>{counts.active}</strong></div>
+          <div><span>Ready for review</span><strong>{counts.ready}</strong></div>
           <div><span>Blocked</span><strong>{counts.blocked}</strong></div>
           <div><span>Complete</span><strong>{counts.done}</strong></div>
         </div>
@@ -358,7 +463,16 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                         value={item.status}
                         onChange={(event) => requestStatusChange(action.id, event.target.value as ActionStatus)}
                       >
-                        {actionStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
+                        {actionStatuses.map((status) => (
+                          <option
+                            key={status.value}
+                            value={status.value}
+                            disabled={
+                              (status.value === "ready-for-review" && item.status !== "ready-for-review")
+                              || (status.value === "done" && item.status !== "done")
+                            }
+                          >{status.label}</option>
+                        ))}
                       </select>
                       <StatusPill status={item.status} />
                     </td>
@@ -372,9 +486,16 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                           onClick={() => {
                             setSelectedActionId(action.id);
                             setCopyState("idle");
+                            setWorkProductError("");
                           }}
                         >
-                          {item.status === "proposed" ? "Review handoff" : "Open work packet"}<ArrowRight size={12} />
+                          {item.status === "proposed"
+                            ? "Review handoff"
+                            : item.status === "ready-for-review"
+                              ? "Review work product"
+                              : item.status === "done"
+                                ? "View accepted work"
+                                : "Open work packet"}<ArrowRight size={12} />
                         </button>
                       </div>
                     </td>
@@ -456,9 +577,82 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
               </div>
             </div>
 
+            {selectedItem.workProduct && (
+              <article className={selectedItem.status === "done" ? "work-product work-product-accepted" : "work-product"}>
+                <div className="work-product-heading">
+                  <div className="work-product-icon"><FileCheck2 /></div>
+                  <div>
+                    <p className="eyebrow">Specialist work product</p>
+                    <h5>{selectedItem.workProduct.title}</h5>
+                    <span>
+                      Prepared by {selectedItem.workProduct.preparedBy}
+                      {selectedItem.workProductGeneratedAt
+                        ? " · " + new Date(selectedItem.workProductGeneratedAt).toLocaleString()
+                        : ""}
+                    </span>
+                  </div>
+                  <span className={`work-product-confidence confidence-${selectedItem.workProduct.confidence}`}>
+                    {selectedItem.workProduct.confidence} confidence
+                  </span>
+                </div>
+
+                <div className="work-product-summary">
+                  <strong>Executive summary</strong>
+                  <p>{selectedItem.workProduct.executiveSummary}</p>
+                </div>
+
+                <div className="work-product-grid">
+                  <section>
+                    <strong>Work performed</strong>
+                    <ul>{selectedItem.workProduct.workPerformed.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </section>
+                  <section>
+                    <strong>Evidence considered</strong>
+                    <ul>{selectedItem.workProduct.evidenceConsidered.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </section>
+                </div>
+
+                <section className="work-product-deliverable">
+                  <strong>Prepared deliverable</strong>
+                  <p>{selectedItem.workProduct.deliverable}</p>
+                </section>
+
+                <div className="work-product-grid">
+                  <section>
+                    <strong>Limitations and open evidence</strong>
+                    <ul>{selectedItem.workProduct.limitations.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </section>
+                  <section>
+                    <strong>Closure evidence</strong>
+                    <ul>{selectedItem.workProduct.closureEvidence.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </section>
+                  <section>
+                    <strong>Recommended next steps</strong>
+                    <ul>{selectedItem.workProduct.recommendedNextSteps.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </section>
+                </div>
+
+                {selectedItem.status === "done" && (
+                  <div className="work-product-acceptance">
+                    <CheckCircle2 />
+                    <span>
+                      <strong>Completion approved by a human reviewer</strong>
+                      {selectedItem.workProductReviewedAt
+                        ? new Date(selectedItem.workProductReviewedAt).toLocaleString()
+                        : "Recorded in the secure audit trail."}
+                    </span>
+                  </div>
+                )}
+              </article>
+            )}
+
             {!handoffReady && selectedItem.status === "proposed" && (
               <p className="handoff-requirement">Add an accountable owner and due date before approving this assignment.</p>
             )}
+            {cloud.status !== "ready" && selectedItem.status !== "proposed" && (
+              <p className="handoff-requirement">Connect Secure cloud before asking a specialist to prepare work.</p>
+            )}
+            {workProductError && <p className="work-product-error">{workProductError}</p>}
 
             <div className="handoff-footer">
               <div className="handoff-audit-note">
@@ -480,6 +674,30 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                   >
                     <UserCheck />Approve &amp; assign to {selectedAction.recommendedAgent}
                   </button>
+                ) : selectedItem.status === "approved" ? (
+                  <button
+                    className="handoff-primary"
+                    disabled={cloud.status !== "ready" || generatingActionId === selectedAction.id}
+                    onClick={() => prepareWorkProduct(selectedAction.id)}
+                  >
+                    <Bot />
+                    {selectedItem.workProduct
+                      ? `Ask ${selectedAction.recommendedAgent} to revise work product`
+                      : `Ask ${selectedAction.recommendedAgent} to prepare work product`}
+                  </button>
+                ) : selectedItem.status === "in-progress" ? (
+                  <div className="handoff-state handoff-state-in-progress">
+                    <RefreshCw className="spin" />{selectedAction.recommendedAgent} is preparing the draft
+                  </div>
+                ) : selectedItem.status === "ready-for-review" ? (
+                  <>
+                    <button className="handoff-secondary" onClick={() => returnForRevision(selectedAction.id)}>
+                      <RotateCcw />Return for revision
+                    </button>
+                    <button className="handoff-primary" onClick={() => approveCompletion(selectedAction.id)}>
+                      <UserCheck />Approve completion
+                    </button>
+                  </>
                 ) : (
                   <div className={`handoff-state handoff-state-${selectedItem.status}`}>
                     <CheckCircle2 />{handoffStateLabel(selectedItem.status, selectedAction.recommendedAgent)}

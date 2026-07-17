@@ -266,6 +266,10 @@ export type Database = {
           title: string
           updated_at: string
           verification: string
+          work_product: Json | null
+          work_product_generated_at: string | null
+          work_product_reviewed_at: string | null
+          work_product_reviewed_by: string | null
         }
         Insert: {
           action_key: string
@@ -284,6 +288,10 @@ export type Database = {
           title: string
           updated_at?: string
           verification?: string
+          work_product?: Json | null
+          work_product_generated_at?: string | null
+          work_product_reviewed_at?: string | null
+          work_product_reviewed_by?: string | null
         }
         Update: {
           action_key?: string
@@ -302,6 +310,10 @@ export type Database = {
           title?: string
           updated_at?: string
           verification?: string
+          work_product?: Json | null
+          work_product_generated_at?: string | null
+          work_product_reviewed_at?: string | null
+          work_product_reviewed_by?: string | null
         }
         Relationships: [
           {
@@ -333,6 +345,7 @@ export type Database = {
         | "proposed"
         | "approved"
         | "in_progress"
+        | "ready_for_review"
         | "blocked"
         | "done"
       decision_status: "pending" | "approved" | "deferred"
@@ -465,7 +478,14 @@ export const Constants = {
   public: {
     Enums: {
       action_priority: ["urgent", "high", "normal", "low"],
-      action_status: ["proposed", "approved", "in_progress", "blocked", "done"],
+      action_status: [
+        "proposed",
+        "approved",
+        "in_progress",
+        "ready_for_review",
+        "blocked",
+        "done",
+      ],
       decision_status: ["pending", "approved", "deferred"],
       organization_role: ["owner", "admin", "member", "viewer"],
     },
