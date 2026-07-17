@@ -25,6 +25,29 @@ function Pill({ value }: { value: Severity | Priority }) {
   return <span className={`pill pill-${value}`}>{value}</span>;
 }
 
+type PilotFinding = PilotAnalysis["keyFindings"][number];
+
+function isAssuranceFinding(finding: PilotFinding) {
+  const signal = `${finding.category} ${finding.title}`.toLowerCase();
+  return ["positive assurance", "control working", "effective control", "clean control"]
+    .some((phrase) => signal.includes(phrase));
+}
+
+function FindingCard({ finding, assurance = false }: { finding: PilotFinding; assurance?: boolean }) {
+  return (
+    <article className={`finding-card${assurance ? " finding-card-assurance" : ""}`}>
+      <div className="card-top"><span className="finding-id">{finding.id}</span><Pill value={finding.severity} /></div>
+      <p className="category">{finding.category}</p>
+      <h4>{finding.title}</h4>
+      <dl>
+        <div><dt>Evidence</dt><dd>{finding.evidence}</dd></div>
+        <div><dt>Operational impact</dt><dd>{finding.impact}</dd></div>
+        <div className="recommendation"><dt>Recommended response</dt><dd>{finding.recommendation}</dd></div>
+      </dl>
+    </article>
+  );
+}
+
 function EmptyState() {
   return (
     <section className="empty-state">
@@ -49,7 +72,10 @@ function EmptyState() {
 }
 
 function Results({ analysis }: { analysis: PilotAnalysis }) {
-  const highRisks = analysis.keyFindings.filter((f) => severityRank[f.severity] >= 3).length;
+  const sortedFindings = [...analysis.keyFindings].sort((a, b) => severityRank[b.severity] - severityRank[a.severity]);
+  const assuranceFindings = sortedFindings.filter(isAssuranceFinding);
+  const attentionFindings = sortedFindings.filter((finding) => !isAssuranceFinding(finding));
+  const highRisks = attentionFindings.filter((f) => severityRank[f.severity] >= 3).length;
   return (
     <div className="results" id="pilot-results">
       {analysis.mode === "demo" && (
@@ -69,28 +95,34 @@ function Results({ analysis }: { analysis: PilotAnalysis }) {
       </section>
 
       <div className="metric-grid">
-        <div className="metric"><AlertTriangle /><span>Material findings</span><strong>{analysis.keyFindings.length}</strong></div>
+        <div className="metric"><AlertTriangle /><span>Findings reviewed</span><strong>{analysis.keyFindings.length}</strong></div>
         <div className="metric"><ClipboardCheck /><span>Recommended actions</span><strong>{analysis.actions.length}</strong></div>
         <div className="metric"><ShieldCheck /><span>High-risk items</span><strong>{highRisks}</strong></div>
         <div className="metric"><BrainCircuit /><span>Decisions needed</span><strong>{analysis.decisionsNeeded.length}</strong></div>
       </div>
 
       <section className="panel">
-        <div className="section-heading"><div><p className="eyebrow">01 / Findings</p><h3>What requires attention</h3></div><span>{analysis.sourceOverview}</span></div>
-        <div className="findings-grid">
-          {[...analysis.keyFindings].sort((a, b) => severityRank[b.severity] - severityRank[a.severity]).map((finding) => (
-            <article className="finding-card" key={finding.id}>
-              <div className="card-top"><span className="finding-id">{finding.id}</span><Pill value={finding.severity} /></div>
-              <p className="category">{finding.category}</p>
-              <h4>{finding.title}</h4>
-              <dl>
-                <div><dt>Evidence</dt><dd>{finding.evidence}</dd></div>
-                <div><dt>Operational impact</dt><dd>{finding.impact}</dd></div>
-                <div className="recommendation"><dt>Recommended response</dt><dd>{finding.recommendation}</dd></div>
-              </dl>
-            </article>
-          ))}
+        <div className="section-heading"><div><p className="eyebrow">01 / Findings</p><h3>What Pilot found</h3></div><span>{analysis.sourceOverview}</span></div>
+        <div className="findings-group">
+          <div className="findings-group-heading">
+            <span><AlertTriangle size={17} />Issues requiring attention</span>
+            <strong>{attentionFindings.length}</strong>
+          </div>
+          <div className="findings-grid">
+            {attentionFindings.map((finding) => <FindingCard finding={finding} key={finding.id} />)}
+          </div>
         </div>
+        {assuranceFindings.length > 0 && (
+          <div className="findings-group findings-group-assurance">
+            <div className="findings-group-heading findings-group-heading-assurance">
+              <span><ShieldCheck size={17} />Controls working as intended</span>
+              <strong>{assuranceFindings.length}</strong>
+            </div>
+            <div className="findings-grid findings-grid-assurance">
+              {assuranceFindings.map((finding) => <FindingCard assurance finding={finding} key={finding.id} />)}
+            </div>
+          </div>
+        )}
       </section>
 
       <ActionBoard analysis={analysis} />
