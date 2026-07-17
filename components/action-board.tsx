@@ -882,7 +882,7 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
 
                 <section className="closure-section">
                   <div className="closure-section-heading">
-                    <div><strong>2. Ask Atlas to test the evidence</strong><span>Atlas compares the retained files with the action’s definition of done.</span></div>
+                    <div><strong>2. Ask Atlas to test the evidence</strong><span>Selected files are securely processed through QMSPilot’s OpenAI service. Atlas compares them with the definition of done, and its recommendation is retained in the audit trail.</span></div>
                     {selectedItem.closureReview && (
                       <span className={`closure-conclusion closure-conclusion-${selectedItem.closureReview.conclusion}`}>
                         {selectedItem.closureReview.conclusion}
