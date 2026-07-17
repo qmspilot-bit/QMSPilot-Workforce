@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  ArrowRight, Bot, CheckCircle2, Clipboard, Clock3, FileCheck2, RefreshCw, RotateCcw,
-  Save, ShieldCheck, UserCheck, X,
+  AlertCircle, ArrowRight, Bot, CheckCircle2, Clipboard, Clock3, FileCheck2, FileText,
+  RefreshCw, RotateCcw, Save, ShieldCheck, UploadCloud, UserCheck, X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PilotAnalysis, WorkProduct } from "@/lib/types";
+import type { ClosureEvidence, ClosureReview, PilotAnalysis, WorkProduct } from "@/lib/types";
 import { useCloudWorkspace } from "@/components/cloud-workspace";
 
-type ActionStatus = "proposed" | "approved" | "in-progress" | "ready-for-review" | "blocked" | "done";
+type ActionStatus = "proposed" | "approved" | "in-progress" | "ready-for-review" | "implementation" | "evidence-review" | "blocked" | "done";
 type DecisionStatus = "pending" | "approved" | "deferred";
 
 type BoardItem = {
@@ -20,6 +20,13 @@ type BoardItem = {
   workProductGeneratedAt: string;
   workProductReviewedAt: string;
   workProductReviewedBy: string;
+  closureEvidence: ClosureEvidence[];
+  closureReview: ClosureReview | null;
+  closureReviewedAt: string;
+  closureReviewRequestedBy: string;
+  closureNote: string;
+  closedAt: string;
+  closedBy: string;
 };
 
 type DecisionItem = {
@@ -59,6 +66,8 @@ const actionStatuses: Array<{ value: ActionStatus; label: string }> = [
   { value: "approved", label: "Approved" },
   { value: "in-progress", label: "In progress" },
   { value: "ready-for-review", label: "Ready for review" },
+  { value: "implementation", label: "Work in progress" },
+  { value: "evidence-review", label: "Evidence review" },
   { value: "blocked", label: "Blocked" },
   { value: "done", label: "Done" },
 ];
@@ -68,6 +77,22 @@ const decisionStatuses: Array<{ value: DecisionStatus; label: string }> = [
   { value: "approved", label: "Approved" },
   { value: "deferred", label: "Deferred" },
 ];
+
+const MAX_CLOSURE_FILES = 8;
+const MAX_CLOSURE_FILE_BYTES = 15 * 1024 * 1024;
+const MAX_CLOSURE_TOTAL_BYTES = 30 * 1024 * 1024;
+const closureEvidenceExtensions = new Set([
+  "pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "jpg", "jpeg", "png", "webp",
+]);
+
+function closureFileExtension(name: string) {
+  return name.split(".").pop()?.toLowerCase() ?? "";
+}
+
+function formatEvidenceSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function makeDefaultBoard(analysis: PilotAnalysis): BoardState {
   return Object.fromEntries(
@@ -82,6 +107,13 @@ function makeDefaultBoard(analysis: PilotAnalysis): BoardState {
         workProductGeneratedAt: "",
         workProductReviewedAt: "",
         workProductReviewedBy: "",
+        closureEvidence: [],
+        closureReview: null,
+        closureReviewedAt: "",
+        closureReviewRequestedBy: "",
+        closureNote: "",
+        closedAt: "",
+        closedBy: "",
       },
     ]),
   );
@@ -104,6 +136,8 @@ function handoffStateLabel(status: ActionStatus, agent: string) {
   if (status === "approved") return `Assignment approved for ${agent}`;
   if (status === "in-progress") return `${agent} preparation is in progress`;
   if (status === "ready-for-review") return `${agent}'s work product is ready for human review`;
+  if (status === "implementation") return "The human owner is performing the approved work";
+  if (status === "evidence-review") return "Closure evidence is awaiting the human decision";
   if (status === "blocked") return "Assignment blocked pending human input";
   if (status === "done") return "Work marked complete after human review";
   return "Awaiting human approval";
@@ -124,7 +158,12 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
   const [generatingActionId, setGeneratingActionId] = useState("");
   const [workProductError, setWorkProductError] = useState("");
+  const [closureFiles, setClosureFiles] = useState<File[]>([]);
+  const [closureEvidenceNote, setClosureEvidenceNote] = useState("");
+  const [closureBusy, setClosureBusy] = useState<"" | "upload" | "review">("");
+  const [closureError, setClosureError] = useState("");
   const handoffPanelRef = useRef<HTMLElement>(null);
+  const closureFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setReady(false);
@@ -134,6 +173,10 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     setCopyState("idle");
     setGeneratingActionId("");
     setWorkProductError("");
+    setClosureFiles([]);
+    setClosureEvidenceNote("");
+    setClosureBusy("");
+    setClosureError("");
     setBoard(defaultBoard);
     setDecisions(defaultDecisions);
 
@@ -219,6 +262,10 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
 
   useEffect(() => {
     if (!selectedActionId) return;
+    setClosureFiles([]);
+    setClosureEvidenceNote("");
+    setClosureError("");
+    if (closureFileRef.current) closureFileRef.current.value = "";
     const frame = window.requestAnimationFrame(() => {
       handoffPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       handoffPanelRef.current?.focus({ preventScroll: true });
@@ -250,7 +297,7 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     }
     if (status === "done" && currentStatus !== "done") {
       setSelectedActionId(id);
-      setWorkProductError("Review the specialist work product and use Approve completion to close this action.");
+      setClosureError("Upload completion evidence, obtain Atlas's review, and record the human closure decision here.");
       return;
     }
     updateAction(id, { status });
@@ -326,15 +373,125 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     setWorkProductError("");
   }
 
-  function approveCompletion(id: string) {
+  function approveWorkPacket(id: string) {
     const item = board[id] ?? defaultBoard[id];
     if (item.status !== "ready-for-review" || !item.workProduct || !cloud.user) return;
     updateAction(id, {
-      status: "done",
+      status: "implementation",
       workProductReviewedAt: new Date().toISOString(),
       workProductReviewedBy: cloud.user.id,
     });
     setWorkProductError("");
+  }
+
+  function selectClosureFiles(files: File[]) {
+    setClosureError("");
+    if (files.length > MAX_CLOSURE_FILES) {
+      setClosureError(`Attach no more than ${MAX_CLOSURE_FILES} closure-evidence files at once.`);
+      return;
+    }
+    if (files.some((file) => file.size > MAX_CLOSURE_FILE_BYTES)) {
+      setClosureError("Each closure-evidence file must be 15 MB or smaller.");
+      return;
+    }
+    if (files.reduce((total, file) => total + file.size, 0) > MAX_CLOSURE_TOTAL_BYTES) {
+      setClosureError("The combined closure evidence must be 30 MB or smaller.");
+      return;
+    }
+    const unsupported = files.find((file) => !closureEvidenceExtensions.has(closureFileExtension(file.name)));
+    if (unsupported) {
+      setClosureError(`${unsupported.name} is not a supported evidence file.`);
+      return;
+    }
+    setClosureFiles(files);
+  }
+
+  async function uploadClosureEvidence(id: string) {
+    if (!cloudAnalysisId || closureFiles.length === 0 || closureBusy) return;
+    setClosureBusy("upload");
+    setClosureError("");
+
+    try {
+      await cloud.saveWorkboard(cloudAnalysisId, analysis, board, decisions);
+      const uploaded = await cloud.uploadClosureEvidence(
+        cloudAnalysisId,
+        id,
+        closureFiles,
+        closureEvidenceNote,
+      );
+      const current = board[id] ?? defaultBoard[id];
+      updateAction(id, {
+        status: "implementation",
+        closureEvidence: [...current.closureEvidence, ...uploaded],
+        closureReview: null,
+        closureReviewedAt: "",
+        closureReviewRequestedBy: "",
+        closureNote: "",
+        closedAt: "",
+        closedBy: "",
+      });
+      setClosureFiles([]);
+      setClosureEvidenceNote("");
+      if (closureFileRef.current) closureFileRef.current.value = "";
+    } catch (error) {
+      setClosureError(error instanceof Error ? error.message : "Closure evidence could not be uploaded.");
+    } finally {
+      setClosureBusy("");
+    }
+  }
+
+  async function reviewClosureEvidence(id: string) {
+    const action = analysis.actions.find((candidate) => candidate.id === id);
+    const item = board[id] ?? defaultBoard[id];
+    if (!action || !cloudAnalysisId || item.closureEvidence.length === 0 || closureBusy) return;
+
+    setClosureBusy("review");
+    setClosureError("");
+    updateAction(id, { status: "evidence-review" });
+
+    try {
+      const token = await cloud.getAccessToken();
+      if (!token) throw new Error("Sign in to Secure cloud before requesting an evidence review.");
+
+      const response = await fetch("/api/closure-review", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          analysisId: cloudAnalysisId,
+          action,
+          workProduct: item.workProduct,
+          evidenceIds: item.closureEvidence.map((evidence) => evidence.id),
+        }),
+      });
+      const payload = await response.json() as ClosureReview & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Atlas could not review the closure evidence.");
+
+      updateAction(id, {
+        status: "evidence-review",
+        closureReview: payload,
+        closureReviewedAt: new Date().toISOString(),
+        closureReviewRequestedBy: cloud.user?.id ?? "",
+      });
+    } catch (error) {
+      updateAction(id, { status: "implementation" });
+      setClosureError(error instanceof Error ? error.message : "Atlas could not review the closure evidence.");
+    } finally {
+      setClosureBusy("");
+    }
+  }
+
+  function closeAction(id: string) {
+    const item = board[id] ?? defaultBoard[id];
+    if (!item.closureReview || !cloud.user || item.closureNote.trim().length < 10) return;
+    updateAction(id, {
+      status: "done",
+      closedAt: new Date().toISOString(),
+      closedBy: cloud.user.id,
+    });
+    setClosureError("");
   }
 
   async function copyWorkPacket(id: string) {
@@ -368,13 +525,14 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     (summary, action) => {
       const status = board[action.id]?.status ?? "proposed";
       if (status === "proposed") summary.proposed += 1;
-      if (status === "approved" || status === "in-progress") summary.active += 1;
-      if (status === "ready-for-review") summary.ready += 1;
+      if (status === "approved" || status === "in-progress" || status === "ready-for-review") summary.active += 1;
+      if (status === "implementation") summary.implementation += 1;
+      if (status === "evidence-review") summary.evidence += 1;
       if (status === "blocked") summary.blocked += 1;
       if (status === "done") summary.done += 1;
       return summary;
     },
-    { proposed: 0, active: 0, ready: 0, blocked: 0, done: 0 },
+    { proposed: 0, active: 0, implementation: 0, evidence: 0, blocked: 0, done: 0 },
   );
 
   const selectedAction = analysis.actions.find((action) => action.id === selectedActionId);
@@ -414,8 +572,9 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
 
         <div className="board-summary" aria-label="Action status summary">
           <div><span>Awaiting approval</span><strong>{counts.proposed}</strong></div>
-          <div><span>Approved or active</span><strong>{counts.active}</strong></div>
-          <div><span>Ready for review</span><strong>{counts.ready}</strong></div>
+          <div><span>Agent preparation</span><strong>{counts.active}</strong></div>
+          <div><span>Human work</span><strong>{counts.implementation}</strong></div>
+          <div><span>Evidence gate</span><strong>{counts.evidence}</strong></div>
           <div><span>Blocked</span><strong>{counts.blocked}</strong></div>
           <div><span>Complete</span><strong>{counts.done}</strong></div>
         </div>
@@ -469,6 +628,8 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                             value={status.value}
                             disabled={
                               (status.value === "ready-for-review" && item.status !== "ready-for-review")
+                              || (status.value === "implementation" && item.status !== "implementation")
+                              || (status.value === "evidence-review" && item.status !== "evidence-review")
                               || (status.value === "done" && item.status !== "done")
                             }
                           >{status.label}</option>
@@ -493,6 +654,10 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                             ? "Review handoff"
                             : item.status === "ready-for-review"
                               ? "Review work product"
+                              : item.status === "implementation"
+                                ? "Upload closure evidence"
+                                : item.status === "evidence-review"
+                                  ? "Review closure decision"
                               : item.status === "done"
                                 ? "View accepted work"
                                 : "Open work packet"}<ArrowRight size={12} />
@@ -578,7 +743,7 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
             </div>
 
             {selectedItem.workProduct && (
-              <article className={selectedItem.status === "done" ? "work-product work-product-accepted" : "work-product"}>
+              <article className={selectedItem.workProductReviewedAt ? "work-product work-product-accepted" : "work-product"}>
                 <div className="work-product-heading">
                   <div className="work-product-icon"><FileCheck2 /></div>
                   <div>
@@ -632,17 +797,174 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                   </section>
                 </div>
 
-                {selectedItem.status === "done" && (
+                {selectedItem.workProductReviewedAt && (
                   <div className="work-product-acceptance">
                     <CheckCircle2 />
                     <span>
-                      <strong>Completion approved by a human reviewer</strong>
+                      <strong>Work packet approved by a human reviewer</strong>
                       {selectedItem.workProductReviewedAt
                         ? new Date(selectedItem.workProductReviewedAt).toLocaleString()
                         : "Recorded in the secure audit trail."}
+                      <small>The accountable owner must still perform the work and provide objective closure evidence.</small>
                     </span>
                   </div>
                 )}
+              </article>
+            )}
+
+            {selectedItem.workProductReviewedAt && (
+              <article className="closure-gate">
+                <div className="closure-gate-heading">
+                  <div className="closure-gate-icon"><ShieldCheck /></div>
+                  <div>
+                    <p className="eyebrow">Pilot 1.2 · Evidence closure gate</p>
+                    <h5>Prove the work before closing the action.</h5>
+                    <span>The human owner performs the work. Atlas reviews the uploaded proof. A human makes the closure decision.</span>
+                  </div>
+                </div>
+
+                <div className="closure-steps" aria-label="Evidence closure workflow">
+                  <span className="closure-step-complete"><CheckCircle2 />Work packet approved</span>
+                  <span className={selectedItem.closureEvidence.length ? "closure-step-complete" : ""}><UploadCloud />Evidence uploaded</span>
+                  <span className={selectedItem.closureReview ? "closure-step-complete" : ""}><Bot />Atlas reviewed</span>
+                  <span className={selectedItem.status === "done" ? "closure-step-complete" : ""}><UserCheck />Human closed</span>
+                </div>
+
+                <section className="closure-section">
+                  <div className="closure-section-heading">
+                    <div><strong>1. Upload objective completion evidence</strong><span>Revised documents, completed records, verification results, or proof photos.</span></div>
+                    <span>{selectedItem.closureEvidence.length} retained file{selectedItem.closureEvidence.length === 1 ? "" : "s"}</span>
+                  </div>
+
+                  {selectedItem.closureEvidence.length > 0 && (
+                    <div className="closure-evidence-list">
+                      {selectedItem.closureEvidence.map((evidence) => (
+                        <div key={evidence.id}>
+                          <FileText />
+                          <span><strong>{evidence.fileName}</strong><small>{formatEvidenceSize(evidence.sizeBytes)} · uploaded {new Date(evidence.uploadedAt).toLocaleString()}</small></span>
+                          <ShieldCheck />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedItem.status !== "done" && (
+                    <div className="closure-upload">
+                      <label className="closure-upload-button">
+                        <UploadCloud />
+                        <span>{closureFiles.length ? `${closureFiles.length} file${closureFiles.length === 1 ? "" : "s"} selected` : "Select closure evidence"}</span>
+                        <input
+                          ref={closureFileRef}
+                          type="file"
+                          multiple
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
+                          onChange={(event) => selectClosureFiles(Array.from(event.target.files ?? []))}
+                        />
+                      </label>
+                      <input
+                        className="board-input closure-note-input"
+                        value={closureEvidenceNote}
+                        placeholder="Optional evidence note: what changed or what this proves"
+                        onChange={(event) => setClosureEvidenceNote(event.target.value)}
+                        maxLength={2000}
+                      />
+                      <button
+                        className="handoff-primary"
+                        disabled={!closureFiles.length || closureBusy !== "" || cloud.status !== "ready"}
+                        onClick={() => uploadClosureEvidence(selectedAction.id)}
+                      >
+                        {closureBusy === "upload" ? <RefreshCw className="spin" /> : <UploadCloud />}
+                        {closureBusy === "upload" ? "Uploading evidence" : "Upload to audit trail"}
+                      </button>
+                    </div>
+                  )}
+                </section>
+
+                <section className="closure-section">
+                  <div className="closure-section-heading">
+                    <div><strong>2. Ask Atlas to test the evidence</strong><span>Atlas compares the retained files with the action’s definition of done.</span></div>
+                    {selectedItem.closureReview && (
+                      <span className={`closure-conclusion closure-conclusion-${selectedItem.closureReview.conclusion}`}>
+                        {selectedItem.closureReview.conclusion}
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedItem.status !== "done" && (
+                    <button
+                      className="handoff-primary closure-review-button"
+                      disabled={!selectedItem.closureEvidence.length || closureBusy !== "" || cloud.status !== "ready"}
+                      onClick={() => reviewClosureEvidence(selectedAction.id)}
+                    >
+                      {closureBusy === "review" ? <RefreshCw className="spin" /> : <Bot />}
+                      {closureBusy === "review" ? "Atlas is reviewing evidence" : selectedItem.closureReview ? "Ask Atlas to review again" : "Ask Atlas to review closure evidence"}
+                    </button>
+                  )}
+
+                  {selectedItem.closureReview && (
+                    <div className={`closure-review closure-review-${selectedItem.closureReview.conclusion}`}>
+                      <div className="closure-review-summary">
+                        {selectedItem.closureReview.conclusion === "sufficient" ? <CheckCircle2 /> : <AlertCircle />}
+                        <span>
+                          <strong>Atlas recommendation: {selectedItem.closureReview.conclusion}</strong>
+                          <p>{selectedItem.closureReview.summary}</p>
+                          <small>{selectedItem.closureReview.confidence} confidence · reviewed {selectedItem.closureReviewedAt ? new Date(selectedItem.closureReviewedAt).toLocaleString() : "just now"}</small>
+                        </span>
+                      </div>
+                      <div className="closure-criteria-list">
+                        {selectedItem.closureReview.criteriaAssessment.map((criterion) => (
+                          <div key={criterion.criterion}>
+                            <span className={`criterion-result criterion-result-${criterion.result}`}>{criterion.result}</span>
+                            <span><strong>{criterion.criterion}</strong><p>{criterion.rationale}</p>{criterion.evidence.length > 0 && <small>{criterion.evidence.join(" · ")}</small>}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {selectedItem.closureReview.gaps.length > 0 && (
+                        <div className="closure-gaps"><strong>Open gaps</strong><ul>{selectedItem.closureReview.gaps.map((gap) => <li key={gap}>{gap}</li>)}</ul></div>
+                      )}
+                      <p className="closure-recommendation"><strong>Recommendation:</strong> {selectedItem.closureReview.recommendation}</p>
+                    </div>
+                  )}
+                </section>
+
+                {selectedItem.closureReview && selectedItem.status !== "done" && (
+                  <section className="closure-section human-closure-section">
+                    <div className="closure-section-heading">
+                      <div><strong>3. Record the human closure decision</strong><span>Atlas advises. The authorized human quality owner decides.</span></div>
+                    </div>
+                    {selectedItem.closureReview.conclusion !== "sufficient" && (
+                      <div className="closure-override-warning"><AlertCircle /><span>Atlas does not recommend closure yet. A human may still decide differently, but the rationale will be permanently retained.</span></div>
+                    )}
+                    <textarea
+                      className="closure-decision-note"
+                      value={selectedItem.closureNote}
+                      placeholder="Required: state why the evidence is adequate and identify any follow-up effectiveness check."
+                      maxLength={4000}
+                      onChange={(event) => updateAction(selectedAction.id, { closureNote: event.target.value })}
+                    />
+                    <button
+                      className="handoff-primary close-action-button"
+                      disabled={selectedItem.closureNote.trim().length < 10 || cloud.status !== "ready"}
+                      onClick={() => closeAction(selectedAction.id)}
+                    >
+                      <UserCheck />
+                      {selectedItem.closureReview.conclusion === "sufficient" ? "Close action" : "Close with documented rationale"}
+                    </button>
+                  </section>
+                )}
+
+                {selectedItem.status === "done" && (
+                  <div className="final-closure-record">
+                    <CheckCircle2 />
+                    <span>
+                      <strong>Action closed by an authorized human</strong>
+                      <p>{selectedItem.closureNote}</p>
+                      <small>{selectedItem.closedAt ? new Date(selectedItem.closedAt).toLocaleString() : "Retained in the secure audit trail."}</small>
+                    </span>
+                  </div>
+                )}
+
+                {closureError && <p className="work-product-error">{closureError}</p>}
               </article>
             )}
 
@@ -694,10 +1016,14 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                     <button className="handoff-secondary" onClick={() => returnForRevision(selectedAction.id)}>
                       <RotateCcw />Return for revision
                     </button>
-                    <button className="handoff-primary" onClick={() => approveCompletion(selectedAction.id)}>
-                      <UserCheck />Approve completion
+                    <button className="handoff-primary" onClick={() => approveWorkPacket(selectedAction.id)}>
+                      <UserCheck />Approve work packet &amp; start work
                     </button>
                   </>
+                ) : selectedItem.status === "implementation" || selectedItem.status === "evidence-review" ? (
+                  <div className="handoff-state handoff-state-in-progress">
+                    <ShieldCheck />{handoffStateLabel(selectedItem.status, selectedAction.recommendedAgent)}
+                  </div>
                 ) : (
                   <div className={`handoff-state handoff-state-${selectedItem.status}`}>
                     <CheckCircle2 />{handoffStateLabel(selectedItem.status, selectedAction.recommendedAgent)}
