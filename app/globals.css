@@ -255,6 +255,7 @@ input:focus, textarea:focus { border-color: #67a6e9; box-shadow: 0 0 0 3px rgba(
 .decision-controls { display: grid; grid-template-columns: 115px minmax(0, 1fr); gap: 7px; }
 .decision-controls .board-input { min-width: 0; width: 100%; }
 .handoff-panel { margin-top: 16px; padding: 18px; border: 1px solid #b9d6f1; border-radius: 14px; background: linear-gradient(135deg, #f7fbff 0%, #eef6fd 100%); box-shadow: 0 16px 36px rgba(24, 68, 114, .09); }
+.handoff-panel:focus { outline: 3px solid rgba(11,95,198,.18); outline-offset: 3px; }
 .handoff-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .handoff-heading h4 { margin: 4px 0; color: var(--ink); font-size: 18px; }
 .handoff-heading > div > span { color: var(--muted); font-size: 9px; }

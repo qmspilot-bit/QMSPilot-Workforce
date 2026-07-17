@@ -3,7 +3,7 @@
 import {
   ArrowRight, Bot, CheckCircle2, Clipboard, Clock3, Save, ShieldCheck, UserCheck, X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PilotAnalysis } from "@/lib/types";
 import { useCloudWorkspace } from "@/components/cloud-workspace";
 
@@ -111,6 +111,7 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
   const [cloudLoaded, setCloudLoaded] = useState(false);
   const [selectedActionId, setSelectedActionId] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const handoffPanelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setReady(false);
@@ -193,6 +194,15 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     analysis, board, cloud.saveWorkboard, cloud.status, cloudAnalysisId,
     cloudLoaded, decisions, ready,
   ]);
+
+  useEffect(() => {
+    if (!selectedActionId) return;
+    const frame = window.requestAnimationFrame(() => {
+      handoffPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      handoffPanelRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedActionId]);
 
   function updateAction(id: string, patch: Partial<BoardItem>) {
     setBoard((current) => ({
@@ -398,7 +408,13 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
         </div>
 
         {selectedAction && selectedItem && (
-          <section className="handoff-panel" id="action-handoff-panel" aria-live="polite">
+          <section
+            className="handoff-panel"
+            id="action-handoff-panel"
+            aria-live="polite"
+            ref={handoffPanelRef}
+            tabIndex={-1}
+          >
             <div className="handoff-heading">
               <div>
                 <p className="eyebrow">Supervised action handoff</p>
