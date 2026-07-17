@@ -2,6 +2,33 @@ export type Severity = "critical" | "high" | "medium" | "low";
 export type Priority = "urgent" | "high" | "normal" | "low";
 export type AgentName = "Pilot" | "Atlas" | "Nexus" | "Forge";
 
+export type ClosureEvidence = {
+  id: string;
+  fileName: string;
+  storagePath: string;
+  mimeType: string;
+  sizeBytes: number;
+  note: string;
+  uploadedAt: string;
+  uploadedBy: string;
+};
+
+export type ClosureReview = {
+  conclusion: "sufficient" | "partial" | "insufficient";
+  summary: string;
+  criteriaAssessment: Array<{
+    criterion: string;
+    result: "met" | "partial" | "not-met";
+    rationale: string;
+    evidence: string[];
+  }>;
+  evidenceReviewed: string[];
+  gaps: string[];
+  recommendation: string;
+  confidence: "high" | "medium" | "low";
+  reviewedBy: "Atlas";
+};
+
 export type WorkProduct = {
   title: string;
   executiveSummary: string;
