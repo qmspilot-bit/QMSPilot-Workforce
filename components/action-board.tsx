@@ -1,6 +1,8 @@
 "use client";
 
-import { Bot, CheckCircle2, Clock3, Save, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight, Bot, CheckCircle2, Clipboard, Clock3, Save, ShieldCheck, UserCheck, X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { PilotAnalysis } from "@/lib/types";
 import { useCloudWorkspace } from "@/components/cloud-workspace";
@@ -27,6 +29,25 @@ type StoredWorkboard = {
   actions?: BoardState;
   decisions?: DecisionState;
 };
+
+const agentProfiles = {
+  Pilot: {
+    role: "Chief of Staff",
+    focus: "Coordinate the work, reconcile inputs, and prepare a leadership-ready recommendation.",
+  },
+  Atlas: {
+    role: "Quality Intelligence",
+    focus: "Trace the evidence, test control effectiveness, and prepare an audit-ready quality response.",
+  },
+  Nexus: {
+    role: "Growth Intelligence",
+    focus: "Assess customer and commercial implications, then prepare a decision-ready growth response.",
+  },
+  Forge: {
+    role: "Product Intelligence",
+    focus: "Translate the requirement into a controlled product or process work package.",
+  },
+} as const;
 
 const actionStatuses: Array<{ value: ActionStatus; label: string }> = [
   { value: "proposed", label: "Proposed" },
@@ -69,6 +90,14 @@ function StatusPill({ status }: { status: ActionStatus | DecisionStatus }) {
   return <span className={"workflow-status workflow-status-" + status}>{status.replace("-", " ")}</span>;
 }
 
+function handoffStateLabel(status: ActionStatus, agent: string) {
+  if (status === "approved") return `Assignment approved for ${agent}`;
+  if (status === "in-progress") return `${agent} preparation is in progress`;
+  if (status === "blocked") return "Assignment blocked pending human input";
+  if (status === "done") return "Work marked complete after human review";
+  return "Awaiting human approval";
+}
+
 export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
   const storageKey = "qmspilot:workboard:" + analysis.generatedAt;
   const defaultBoard = useMemo(() => makeDefaultBoard(analysis), [analysis]);
@@ -80,11 +109,15 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
   const cloud = useCloudWorkspace();
   const [cloudAnalysisId, setCloudAnalysisId] = useState<string | null>(null);
   const [cloudLoaded, setCloudLoaded] = useState(false);
+  const [selectedActionId, setSelectedActionId] = useState("");
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   useEffect(() => {
     setReady(false);
     setCloudAnalysisId(null);
     setCloudLoaded(false);
+    setSelectedActionId("");
+    setCopyState("idle");
     setBoard(defaultBoard);
     setDecisions(defaultDecisions);
 
@@ -175,6 +208,49 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     }));
   }
 
+  function requestStatusChange(id: string, status: ActionStatus) {
+    const currentStatus = board[id]?.status ?? "proposed";
+    if (currentStatus === "proposed" && (status === "approved" || status === "in-progress")) {
+      setSelectedActionId(id);
+      setCopyState("idle");
+      return;
+    }
+    updateAction(id, { status });
+  }
+
+  function approveHandoff(id: string) {
+    const item = board[id] ?? defaultBoard[id];
+    if (!item.owner.trim() || !item.dueDate) return;
+    updateAction(id, { status: "approved" });
+  }
+
+  async function copyWorkPacket(id: string) {
+    const action = analysis.actions.find((candidate) => candidate.id === id);
+    if (!action) return;
+    const item = board[id] ?? defaultBoard[id];
+    const profile = agentProfiles[action.recommendedAgent];
+    const packet = [
+      `QMSPILOT SUPERVISED WORK PACKET · ${action.id}`,
+      `Assignment: ${action.title}`,
+      `Specialist: ${action.recommendedAgent} · ${profile.role}`,
+      `Accountable owner: ${item.owner || "Not assigned"}`,
+      `Due date: ${item.dueDate || "Not set"}`,
+      `Priority: ${action.priority}`,
+      `Mission context: ${analysis.sourceOverview}`,
+      `Why this work matters: ${action.rationale}`,
+      `Definition of done: ${action.verification}`,
+      `Specialist brief: ${profile.focus}`,
+      "Authority boundary: Prepare and recommend only. Do not contact people, alter source records, approve changes, or take external action without a separate human approval.",
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(packet);
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+  }
+
   const counts = analysis.actions.reduce(
     (summary, action) => {
       const status = board[action.id]?.status ?? "proposed";
@@ -186,6 +262,12 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
     },
     { proposed: 0, active: 0, blocked: 0, done: 0 },
   );
+
+  const selectedAction = analysis.actions.find((action) => action.id === selectedActionId);
+  const selectedItem = selectedAction
+    ? board[selectedAction.id] ?? defaultBoard[selectedAction.id]
+    : null;
+  const handoffReady = Boolean(selectedItem?.owner.trim() && selectedItem?.dueDate);
 
   return (
     <>
@@ -225,7 +307,7 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
 
         <div className="approval-reminder">
           <ShieldCheck size={17} />
-          <span><strong>You control every assignment.</strong> Changing a status records your decision; Pilot does not contact anyone or take external action.</span>
+          <span><strong>You control every assignment.</strong> Approving a handoff records your decision and releases preparation work only. No one is contacted and no source record is changed.</span>
         </div>
 
         <div className="action-table-wrap">
@@ -264,13 +346,28 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
                         className="board-select"
                         aria-label={"Status for " + action.title}
                         value={item.status}
-                        onChange={(event) => updateAction(action.id, { status: event.target.value as ActionStatus })}
+                        onChange={(event) => requestStatusChange(action.id, event.target.value as ActionStatus)}
                       >
                         {actionStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
                       </select>
                       <StatusPill status={item.status} />
                     </td>
-                    <td><span className="agent-badge"><Bot size={14} />{action.recommendedAgent}</span></td>
+                    <td>
+                      <div className="agent-cell">
+                        <span className="agent-badge"><Bot size={14} />{action.recommendedAgent}</span>
+                        <button
+                          className="handoff-link"
+                          aria-expanded={selectedActionId === action.id}
+                          aria-controls="action-handoff-panel"
+                          onClick={() => {
+                            setSelectedActionId(action.id);
+                            setCopyState("idle");
+                          }}
+                        >
+                          {item.status === "proposed" ? "Review handoff" : "Open work packet"}<ArrowRight size={12} />
+                        </button>
+                      </div>
+                    </td>
                     <td><span className={"pill pill-" + action.priority}>{action.priority}</span></td>
                     <td>
                       <label className="date-editor">
@@ -299,6 +396,83 @@ export function ActionBoard({ analysis }: { analysis: PilotAnalysis }) {
             </tbody>
           </table>
         </div>
+
+        {selectedAction && selectedItem && (
+          <section className="handoff-panel" id="action-handoff-panel" aria-live="polite">
+            <div className="handoff-heading">
+              <div>
+                <p className="eyebrow">Supervised action handoff</p>
+                <h4>{selectedAction.title}</h4>
+                <span>{selectedAction.id} · Work packet prepared by Pilot</span>
+              </div>
+              <button
+                className="handoff-close"
+                aria-label="Close work packet"
+                onClick={() => setSelectedActionId("")}
+              ><X /></button>
+            </div>
+
+            <div className="handoff-layout">
+              <div className="handoff-agent-card">
+                <div className="handoff-agent-icon"><Bot /></div>
+                <div>
+                  <span>Recommended specialist</span>
+                  <strong>{selectedAction.recommendedAgent}</strong>
+                  <p>{agentProfiles[selectedAction.recommendedAgent].role}</p>
+                </div>
+                <StatusPill status={selectedItem.status} />
+              </div>
+
+              <dl className="handoff-packet-grid">
+                <div><dt>Accountable owner</dt><dd>{selectedItem.owner || "Owner required"}</dd></div>
+                <div><dt>Due date</dt><dd>{selectedItem.dueDate || "Due date required"}</dd></div>
+                <div><dt>Why this work matters</dt><dd>{selectedAction.rationale}</dd></div>
+                <div><dt>Definition of done</dt><dd>{selectedAction.verification}</dd></div>
+                <div className="handoff-packet-wide"><dt>Specialist brief</dt><dd>{agentProfiles[selectedAction.recommendedAgent].focus}</dd></div>
+              </dl>
+            </div>
+
+            <div className="handoff-guardrail">
+              <ShieldCheck />
+              <div>
+                <strong>Human approval boundary</strong>
+                <span>Prepare and recommend only. No messages, record changes, approvals, purchases, or external actions are authorized by this handoff.</span>
+              </div>
+            </div>
+
+            {!handoffReady && selectedItem.status === "proposed" && (
+              <p className="handoff-requirement">Add an accountable owner and due date before approving this assignment.</p>
+            )}
+
+            <div className="handoff-footer">
+              <div className="handoff-audit-note">
+                <UserCheck />
+                <span>
+                  <strong>{cloud.user?.email ?? "Current reviewer"}</strong>
+                  {cloud.status === "ready" ? "Approval will be retained in the secure audit trail." : "Approval will be saved in this browser until Secure cloud is connected."}
+                </span>
+              </div>
+              <div className="handoff-actions">
+                <button className="handoff-secondary" onClick={() => copyWorkPacket(selectedAction.id)}>
+                  <Clipboard />{copyState === "copied" ? "Packet copied" : copyState === "error" ? "Copy unavailable" : "Copy work packet"}
+                </button>
+                {selectedItem.status === "proposed" ? (
+                  <button
+                    className="handoff-primary"
+                    disabled={!handoffReady}
+                    onClick={() => approveHandoff(selectedAction.id)}
+                  >
+                    <UserCheck />Approve &amp; assign to {selectedAction.recommendedAgent}
+                  </button>
+                ) : (
+                  <div className={`handoff-state handoff-state-${selectedItem.status}`}>
+                    <CheckCircle2 />{handoffStateLabel(selectedItem.status, selectedAction.recommendedAgent)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
       </section>
 
       <div className="two-column">
