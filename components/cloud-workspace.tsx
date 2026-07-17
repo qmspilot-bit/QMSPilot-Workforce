@@ -6,12 +6,12 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useState,
   type ReactNode,
 } from "react";
-import type { PilotAnalysis, WorkProduct } from "@/lib/types";
+import type { ClosureEvidence, ClosureReview, PilotAnalysis, WorkProduct } from "@/lib/types";
 import type { Json } from "@/lib/supabase/database.types";
 import { createClient, isCloudConfigured } from "@/lib/supabase/client";
 
 export type CloudBoardItem = {
-  status: "proposed" | "approved" | "in-progress" | "ready-for-review" | "blocked" | "done";
+  status: "proposed" | "approved" | "in-progress" | "ready-for-review" | "implementation" | "evidence-review" | "blocked" | "done";
   owner: string;
   dueDate: string;
   note: string;
@@ -19,6 +19,13 @@ export type CloudBoardItem = {
   workProductGeneratedAt: string;
   workProductReviewedAt: string;
   workProductReviewedBy: string;
+  closureEvidence: ClosureEvidence[];
+  closureReview: ClosureReview | null;
+  closureReviewedAt: string;
+  closureReviewRequestedBy: string;
+  closureNote: string;
+  closedAt: string;
+  closedBy: string;
 };
 
 export type CloudDecisionItem = {
@@ -48,6 +55,12 @@ type CloudWorkspaceValue = {
     actions: Record<string, CloudBoardItem>,
     decisions: Record<string, CloudDecisionItem>,
   ) => Promise<void>;
+  uploadClosureEvidence: (
+    analysisId: string,
+    actionKey: string,
+    files: File[],
+    note: string,
+  ) => Promise<ClosureEvidence[]>;
 };
 
 const CloudWorkspaceContext = createContext<CloudWorkspaceValue | null>(null);
@@ -59,15 +72,44 @@ function cloudAnalysisKey(generatedAt: string) {
 function toDatabaseActionStatus(status: CloudBoardItem["status"]) {
   if (status === "in-progress") return "in_progress" as const;
   if (status === "ready-for-review") return "ready_for_review" as const;
+  if (status === "evidence-review") return "evidence_review" as const;
   return status;
 }
 
 function fromDatabaseActionStatus(
-  status: "proposed" | "approved" | "in_progress" | "ready_for_review" | "blocked" | "done",
+  status: "proposed" | "approved" | "in_progress" | "ready_for_review" | "implementation" | "evidence_review" | "blocked" | "done",
 ) {
   if (status === "in_progress") return "in-progress" as const;
   if (status === "ready_for_review") return "ready-for-review" as const;
+  if (status === "evidence_review") return "evidence-review" as const;
   return status;
+}
+
+function closureEvidenceMimeType(file: File) {
+  if (file.type) return file.type;
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  const types: Record<string, string> = {
+    pdf: "application/pdf",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    csv: "text/csv",
+    txt: "text/plain",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+  };
+  return types[extension ?? ""] ?? "application/octet-stream";
+}
+
+function safeStorageFileName(name: string) {
+  return name
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 140) || "evidence";
 }
 
 export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
@@ -226,7 +268,7 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
     const [actionsResult, decisionsResult] = await Promise.all([
       supabase
         .from("work_items")
-        .select("action_key, owner_name, status, due_date, progress_note, work_product, work_product_generated_at, work_product_reviewed_at, work_product_reviewed_by")
+        .select("id, action_key, owner_name, status, due_date, progress_note, work_product, work_product_generated_at, work_product_reviewed_at, work_product_reviewed_by, closure_review, closure_reviewed_at, closure_review_requested_by, closure_note, closed_at, closed_by")
         .eq("organization_id", organizationId)
         .eq("analysis_id", analysisId),
       supabase
@@ -238,6 +280,34 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
 
     if (actionsResult.error) throw actionsResult.error;
     if (decisionsResult.error) throw decisionsResult.error;
+
+    const workItemIds = actionsResult.data.map((item) => item.id);
+    const evidenceResult = workItemIds.length > 0
+      ? await supabase
+        .from("closure_evidence")
+        .select("id, work_item_id, file_name, storage_path, mime_type, size_bytes, evidence_note, uploaded_at, uploaded_by")
+        .eq("organization_id", organizationId)
+        .in("work_item_id", workItemIds)
+        .order("uploaded_at", { ascending: true })
+      : { data: [], error: null };
+
+    if (evidenceResult.error) throw evidenceResult.error;
+
+    const evidenceByWorkItem = new Map<string, ClosureEvidence[]>();
+    for (const evidence of evidenceResult.data) {
+      const current = evidenceByWorkItem.get(evidence.work_item_id) ?? [];
+      current.push({
+        id: evidence.id,
+        fileName: evidence.file_name,
+        storagePath: evidence.storage_path,
+        mimeType: evidence.mime_type,
+        sizeBytes: evidence.size_bytes,
+        note: evidence.evidence_note,
+        uploadedAt: evidence.uploaded_at,
+        uploadedBy: evidence.uploaded_by,
+      });
+      evidenceByWorkItem.set(evidence.work_item_id, current);
+    }
 
     const actions = Object.fromEntries(
       actionsResult.data.map((item) => [
@@ -251,6 +321,13 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
           workProductGeneratedAt: item.work_product_generated_at ?? "",
           workProductReviewedAt: item.work_product_reviewed_at ?? "",
           workProductReviewedBy: item.work_product_reviewed_by ?? "",
+          closureEvidence: evidenceByWorkItem.get(item.id) ?? [],
+          closureReview: item.closure_review as unknown as ClosureReview | null,
+          closureReviewedAt: item.closure_reviewed_at ?? "",
+          closureReviewRequestedBy: item.closure_review_requested_by ?? "",
+          closureNote: item.closure_note,
+          closedAt: item.closed_at ?? "",
+          closedBy: item.closed_by ?? "",
         },
       ]),
     );
@@ -295,6 +372,12 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
         work_product_generated_at: item?.workProductGeneratedAt || null,
         work_product_reviewed_at: item?.workProductReviewedAt || null,
         work_product_reviewed_by: item?.workProductReviewedBy || null,
+        closure_review: item?.closureReview ? item.closureReview as unknown as Json : null,
+        closure_reviewed_at: item?.closureReviewedAt || null,
+        closure_review_requested_by: item?.closureReviewRequestedBy || null,
+        closure_note: item?.closureNote ?? "",
+        closed_at: item?.closedAt || null,
+        closed_by: item?.closedBy || null,
         created_by: user.id,
       };
     });
@@ -333,6 +416,84 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
     }).format(new Date()));
   }, [organizationId, user]);
 
+  const uploadClosureEvidence = useCallback(async (
+    analysisId: string,
+    actionKey: string,
+    files: File[],
+    note: string,
+  ) => {
+    const supabase = createClient();
+    if (!supabase || !user || !organizationId) {
+      throw new Error("Connect Secure cloud before uploading closure evidence.");
+    }
+
+    const { data: workItem, error: workItemError } = await supabase
+      .from("work_items")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("analysis_id", analysisId)
+      .eq("action_key", actionKey)
+      .maybeSingle();
+
+    if (workItemError) throw workItemError;
+    if (!workItem) throw new Error("Save the action to Secure cloud before uploading evidence.");
+
+    const uploaded: ClosureEvidence[] = [];
+    for (const file of files) {
+      const evidenceId = crypto.randomUUID();
+      const mimeType = closureEvidenceMimeType(file);
+      const storagePath = [
+        organizationId,
+        workItem.id,
+        `${evidenceId}-${safeStorageFileName(file.name)}`,
+      ].join("/");
+
+      const { error: uploadError } = await supabase.storage
+        .from("closure-evidence")
+        .upload(storagePath, file, {
+          contentType: mimeType,
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: evidence, error: evidenceError } = await supabase
+        .from("closure_evidence")
+        .insert({
+          id: evidenceId,
+          organization_id: organizationId,
+          work_item_id: workItem.id,
+          file_name: file.name,
+          storage_path: storagePath,
+          mime_type: mimeType,
+          size_bytes: file.size,
+          evidence_note: note.trim(),
+          uploaded_by: user.id,
+        })
+        .select("id, file_name, storage_path, mime_type, size_bytes, evidence_note, uploaded_at, uploaded_by")
+        .single();
+
+      if (evidenceError) throw evidenceError;
+      uploaded.push({
+        id: evidence.id,
+        fileName: evidence.file_name,
+        storagePath: evidence.storage_path,
+        mimeType: evidence.mime_type,
+        sizeBytes: evidence.size_bytes,
+        note: evidence.evidence_note,
+        uploadedAt: evidence.uploaded_at,
+        uploadedBy: evidence.uploaded_by,
+      });
+    }
+
+    setLastSync(new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date()));
+    return uploaded;
+  }, [organizationId, user]);
+
   const value = useMemo<CloudWorkspaceValue>(() => ({
     configured,
     status,
@@ -347,9 +508,11 @@ export function CloudWorkspaceProvider({ children }: { children: ReactNode }) {
     ensureAnalysis,
     loadWorkboard,
     saveWorkboard,
+    uploadClosureEvidence,
   }), [
     configured, ensureAnalysis, getAccessToken, lastSync, loadWorkboard, organizationId,
-    organizationName, saveWorkboard, sendMagicLink, signOut, status, syncError, user,
+    organizationName, saveWorkboard, sendMagicLink, signOut, status, syncError,
+    uploadClosureEvidence, user,
   ]);
 
   return (
