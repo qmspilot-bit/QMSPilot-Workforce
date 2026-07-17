@@ -105,6 +105,60 @@ export type Database = {
           },
         ]
       }
+      closure_evidence: {
+        Row: {
+          evidence_note: string
+          file_name: string
+          id: string
+          mime_type: string
+          organization_id: string
+          size_bytes: number
+          storage_path: string
+          uploaded_at: string
+          uploaded_by: string
+          work_item_id: string
+        }
+        Insert: {
+          evidence_note?: string
+          file_name: string
+          id?: string
+          mime_type?: string
+          organization_id: string
+          size_bytes: number
+          storage_path: string
+          uploaded_at?: string
+          uploaded_by: string
+          work_item_id: string
+        }
+        Update: {
+          evidence_note?: string
+          file_name?: string
+          id?: string
+          mime_type?: string
+          organization_id?: string
+          size_bytes?: number
+          storage_path?: string
+          uploaded_at?: string
+          uploaded_by?: string
+          work_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closure_evidence_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closure_evidence_work_item_org_fkey"
+            columns: ["work_item_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "work_items"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       decision_records: {
         Row: {
           analysis_id: string
@@ -252,6 +306,12 @@ export type Database = {
         Row: {
           action_key: string
           analysis_id: string
+          closed_at: string | null
+          closed_by: string | null
+          closure_note: string
+          closure_review: Json | null
+          closure_review_requested_by: string | null
+          closure_reviewed_at: string | null
           created_at: string
           created_by: string
           due_date: string | null
@@ -274,6 +334,12 @@ export type Database = {
         Insert: {
           action_key: string
           analysis_id: string
+          closed_at?: string | null
+          closed_by?: string | null
+          closure_note?: string
+          closure_review?: Json | null
+          closure_review_requested_by?: string | null
+          closure_reviewed_at?: string | null
           created_at?: string
           created_by: string
           due_date?: string | null
@@ -296,6 +362,12 @@ export type Database = {
         Update: {
           action_key?: string
           analysis_id?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          closure_note?: string
+          closure_review?: Json | null
+          closure_review_requested_by?: string | null
+          closure_reviewed_at?: string | null
           created_at?: string
           created_by?: string
           due_date?: string | null
@@ -346,6 +418,8 @@ export type Database = {
         | "approved"
         | "in_progress"
         | "ready_for_review"
+        | "implementation"
+        | "evidence_review"
         | "blocked"
         | "done"
       decision_status: "pending" | "approved" | "deferred"
