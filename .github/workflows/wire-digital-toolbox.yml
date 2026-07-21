@@ -1,0 +1,33 @@
+name: Wire Northstar Digital Toolbox
+
+on:
+  push:
+    paths:
+      - 'scripts/wire-digital-toolbox.mjs'
+      - '.github/workflows/wire-digital-toolbox.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  wire-toolbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wire Digital Toolbox
+        run: node scripts/wire-digital-toolbox.mjs
+      - name: Commit updated page
+        run: |
+          if git diff --quiet; then
+            echo "No changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx
+          git commit -m "Wire Northstar Digital Toolbox into Workforce UI"
+          git push
