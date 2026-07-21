@@ -7,7 +7,9 @@ import {
   CircleDollarSign,
   Clock3,
   ExternalLink,
+  FileCheck2,
   FileWarning,
+  ListChecks,
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
@@ -15,6 +17,21 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const MANAGEMENT_ENDPOINT = "https://mcdxriothpcadqcaarui.supabase.co/functions/v1/northstar-ncr-ingest";
+
+type CorrectiveAction = {
+  id: string;
+  type: string;
+  priority: string;
+  description: string;
+  owner: string;
+  dueDate: string;
+  status: string;
+  completionDate: string;
+  verification: string;
+  evidenceRef: string;
+  notes: string;
+  overdue: boolean;
+};
 
 type NcrRecord = {
   recordId: string;
@@ -41,6 +58,7 @@ type NcrRecord = {
   actionCount: number;
   openActionCount: number;
   overdueActionCount: number;
+  correctiveActions: CorrectiveAction[];
   effectivenessResult: string;
   effectivenessTargetDate: string;
   sourceApp: string;
@@ -103,6 +121,18 @@ function statusColors(status: string) {
   return { background: "#fff2d8", color: "#8a5600" };
 }
 
+function actionStatusColors(status: string, overdue: boolean) {
+  if (overdue) return { background: "#ffe5e2", color: "#a52f34", border: "#f1b8b5" };
+  const normalized = status.toLowerCase();
+  if (["complete", "completed", "closed", "done", "verified"].includes(normalized)) {
+    return { background: "#dcf7eb", color: "#0b6947", border: "#b8e7d2" };
+  }
+  if (normalized.includes("progress")) {
+    return { background: "#e7f2ff", color: "#0758b8", border: "#c5ddf6" };
+  }
+  return { background: "#fff2d8", color: "#8a5600", border: "#edd19b" };
+}
+
 export function NcrToolLauncher() {
   const pathname = usePathname();
   const [records, setRecords] = useState<NcrRecord[]>([]);
@@ -111,6 +141,7 @@ export function NcrToolLauncher() {
   const [error, setError] = useState("");
   const [lastSync, setLastSync] = useState("");
   const [expanded, setExpanded] = useState(true);
+  const [openRecords, setOpenRecords] = useState<Record<string, boolean>>({});
 
   const loadRecords = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -125,7 +156,12 @@ export function NcrToolLauncher() {
       });
       const payload = await response.json() as ManagementResponse;
       if (!response.ok) throw new Error(payload.error || `Northstar returned HTTP ${response.status}`);
-      setRecords(Array.isArray(payload.records) ? payload.records : []);
+      const nextRecords = Array.isArray(payload.records) ? payload.records : [];
+      setRecords(nextRecords);
+      setOpenRecords((current) => {
+        if (Object.keys(current).length || nextRecords.length === 0) return current;
+        return { [nextRecords[0].recordId]: true };
+      });
       setLastSync(payload.generatedAt || new Date().toISOString());
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "NCR records could not be loaded.");
@@ -197,8 +233,8 @@ export function NcrToolLauncher() {
         right: 20,
         bottom: 20,
         zIndex: 60,
-        width: "min(410px, calc(100vw - 24px))",
-        maxHeight: "min(760px, calc(100vh - 40px))",
+        width: "min(470px, calc(100vw - 24px))",
+        maxHeight: "min(820px, calc(100vh - 40px))",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -238,20 +274,17 @@ export function NcrToolLauncher() {
       <div style={{ overflowY: "auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", borderBottom: "1px solid #dbe5ef", background: "white" }}>
           {[
-            ["Open", metrics.open, FileWarning, "#0b5fc6"],
-            ["High risk", metrics.highRisk, AlertTriangle, "#b93843"],
-            ["Overdue", metrics.overdue, Clock3, "#a66a00"],
-            ["COPQ", money(metrics.copq), CircleDollarSign, "#137a5a"],
-          ].map(([label, value, Icon, color]) => {
-            const MetricIcon = Icon as typeof FileWarning;
-            return (
-              <div key={label as string} style={{ minWidth: 0, padding: "12px 8px", textAlign: "center", borderRight: label === "COPQ" ? 0 : "1px solid #e3eaf2" }}>
-                <MetricIcon size={16} style={{ margin: "0 auto 5px", color: color as string }} />
-                <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", fontSize: typeof value === "string" && value.length > 6 ? 12 : 17, color: "#173a5d" }}>{value as string | number}</strong>
-                <span style={{ display: "block", marginTop: 2, color: "#6b7f94", fontSize: 8, fontWeight: 800, textTransform: "uppercase" }}>{label as string}</span>
-              </div>
-            );
-          })}
+            { label: "Open", value: metrics.open, Icon: FileWarning, color: "#0b5fc6" },
+            { label: "High risk", value: metrics.highRisk, Icon: AlertTriangle, color: "#b93843" },
+            { label: "Overdue", value: metrics.overdue, Icon: Clock3, color: "#a66a00" },
+            { label: "COPQ", value: money(metrics.copq), Icon: CircleDollarSign, color: "#137a5a" },
+          ].map(({ label, value, Icon, color }) => (
+            <div key={label} style={{ minWidth: 0, padding: "12px 8px", textAlign: "center", borderRight: label === "COPQ" ? 0 : "1px solid #e3eaf2" }}>
+              <Icon size={16} style={{ margin: "0 auto 5px", color }} />
+              <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", fontSize: typeof value === "string" && value.length > 6 ? 12 : 17, color: "#173a5d" }}>{value}</strong>
+              <span style={{ display: "block", marginTop: 2, color: "#6b7f94", fontSize: 8, fontWeight: 800, textTransform: "uppercase" }}>{label}</span>
+            </div>
+          ))}
         </div>
 
         <div style={{ padding: "13px 14px 4px" }}>
@@ -287,6 +320,7 @@ export function NcrToolLauncher() {
               {records.slice(0, 5).map((record) => {
                 const severity = severityColors(record.severity);
                 const status = statusColors(record.status);
+                const actionsOpen = Boolean(openRecords[record.recordId]);
                 return (
                   <article key={record.recordId} style={{ overflow: "hidden", border: "1px solid #d5e0eb", borderRadius: 12, background: "white", boxShadow: "0 5px 15px rgba(25,50,75,.05)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "11px 12px 9px", borderBottom: "1px solid #edf1f5" }}>
@@ -299,6 +333,7 @@ export function NcrToolLauncher() {
                         <span style={{ padding: "5px 7px", borderRadius: 999, background: status.background, color: status.color, fontSize: 8, fontWeight: 900 }}>{record.status}</span>
                       </div>
                     </div>
+
                     <div style={{ padding: "10px 12px" }}>
                       <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#243c54", fontSize: 11 }}>{record.part || "Nonconforming output"}{record.partNumber ? ` · ${record.partNumber}` : ""}</strong>
                       <p style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "6px 0 9px", color: "#66798d", fontSize: 9, lineHeight: 1.45 }}>{record.description || "No issue summary provided."}</p>
@@ -312,6 +347,50 @@ export function NcrToolLauncher() {
                         <span>Updated {timeLabel(record.updatedAt)}</span>
                       </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setOpenRecords((current) => ({ ...current, [record.recordId]: !current[record.recordId] }))}
+                      aria-expanded={actionsOpen}
+                      style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "9px 12px", border: 0, borderTop: "1px solid #e8eef4", background: actionsOpen ? "#edf5ff" : "#f8fbfe", color: "#20496f", fontSize: 9, fontWeight: 900 }}
+                    >
+                      <span style={{ display: "flex", alignItems: "center", gap: 7 }}><ListChecks size={15} />Corrective actions ({record.actionCount})</span>
+                      {actionsOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </button>
+
+                    {actionsOpen && (
+                      <div style={{ display: "grid", gap: 8, padding: "10px", borderTop: "1px solid #dce8f4", background: "#f5f9fe" }}>
+                        {record.correctiveActions.length === 0 ? (
+                          <div style={{ padding: "10px", border: "1px dashed #c9d7e5", borderRadius: 9, color: "#6d8093", background: "white", fontSize: 9, textAlign: "center" }}>No corrective actions were included in this NCR.</div>
+                        ) : record.correctiveActions.map((action, index) => {
+                          const actionStatus = actionStatusColors(action.status, action.overdue);
+                          return (
+                            <section key={action.id || `${record.recordId}-${index}`} style={{ padding: "10px", border: `1px solid ${action.overdue ? "#efc1bd" : "#d4e0eb"}`, borderRadius: 10, background: "white" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                                <div style={{ minWidth: 0 }}>
+                                  <small style={{ display: "block", color: "#0b5fc6", fontSize: 7, fontWeight: 900, letterSpacing: ".06em", textTransform: "uppercase" }}>Action {index + 1} · {action.type}</small>
+                                  <strong style={{ display: "block", marginTop: 4, color: "#253d55", fontSize: 10, lineHeight: 1.35 }}>{action.description || "Corrective action description not provided."}</strong>
+                                </div>
+                                <span style={{ flex: "0 0 auto", padding: "4px 6px", borderRadius: 999, background: actionStatus.background, color: actionStatus.color, border: `1px solid ${actionStatus.border}`, fontSize: 7, fontWeight: 900 }}>{action.overdue ? "OVERDUE" : action.status}</span>
+                              </div>
+
+                              <div style={{ display: "grid", gridTemplateColumns: "1.2fr .8fr .8fr", gap: 6, marginTop: 8 }}>
+                                <span style={{ minWidth: 0, padding: "6px 7px", borderRadius: 7, background: "#f5f8fb" }}><small style={{ display: "block", color: "#728499", fontSize: 6, fontWeight: 850, textTransform: "uppercase" }}>Owner</small><strong style={{ display: "block", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 8 }}>{action.owner}</strong></span>
+                                <span style={{ minWidth: 0, padding: "6px 7px", borderRadius: 7, background: action.overdue ? "#fff0ed" : "#f5f8fb" }}><small style={{ display: "block", color: "#728499", fontSize: 6, fontWeight: 850, textTransform: "uppercase" }}>Due</small><strong style={{ display: "block", marginTop: 2, fontSize: 8 }}>{dateLabel(action.dueDate)}</strong></span>
+                                <span style={{ minWidth: 0, padding: "6px 7px", borderRadius: 7, background: "#f5f8fb" }}><small style={{ display: "block", color: "#728499", fontSize: 6, fontWeight: 850, textTransform: "uppercase" }}>Priority</small><strong style={{ display: "block", marginTop: 2, fontSize: 8 }}>{action.priority}</strong></span>
+                              </div>
+
+                              {(action.verification || action.evidenceRef) && (
+                                <div style={{ display: "grid", gap: 5, marginTop: 8, paddingTop: 8, borderTop: "1px solid #edf1f5" }}>
+                                  {action.verification && <p style={{ display: "flex", gap: 6, margin: 0, color: "#536a80", fontSize: 8, lineHeight: 1.4 }}><FileCheck2 size={13} style={{ flex: "0 0 auto", color: "#137a5a" }} /><span><strong style={{ color: "#344b61" }}>Verification:</strong> {action.verification}</span></p>}
+                                  {action.evidenceRef && <p style={{ margin: 0, color: "#6c7f92", fontSize: 8, lineHeight: 1.4 }}><strong style={{ color: "#465d73" }}>Evidence reference:</strong> {action.evidenceRef}</p>}
+                                </div>
+                              )}
+                            </section>
+                          );
+                        })}
+                      </div>
+                    )}
                   </article>
                 );
               })}
