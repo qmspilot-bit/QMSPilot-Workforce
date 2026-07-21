@@ -1,0 +1,6 @@
+This commit forces the active Pilot 1.2 preview branch to redeploy with the connected NCR tile and /tools/ncr route.
+Expected toolbox state:
+- Corrective Action & CAPA: CONNECTED
+- Nonconformance Report: CONNECTED
+- 6S & Process Audits: ROADMAP
+- Training, Calibration & More: ROADMAP
