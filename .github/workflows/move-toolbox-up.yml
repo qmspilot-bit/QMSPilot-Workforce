@@ -1,0 +1,32 @@
+name: Move Digital Toolbox Up
+
+on:
+  push:
+    paths:
+      - scripts/move-toolbox-up.mjs
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  move-toolbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Move toolbox near top of Mission Control
+        run: node scripts/move-toolbox-up.mjs
+      - name: Commit updated page
+        run: |
+          if git diff --quiet; then
+            echo "No changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx
+          git commit -m "Move Digital Toolbox near top of Mission Control"
+          git push
