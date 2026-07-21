@@ -1,7 +1,7 @@
 "use client";
 
 import { Boxes, ExternalLink, FileWarning, X } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
   "https://qmspilot-bit.github.io/QMSPilot-Corrective-Action-CAPA-Northstar/";
@@ -9,7 +9,7 @@ const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
 export function NorthstarToolboxLauncher() {
   const [open, setOpen] = useState(false);
 
-  const connectedCard = (title: string, description: string, href: string, icon: React.ReactNode) => (
+  const connectedCard = (title: string, description: string, href: string, icon: ReactNode) => (
     <article style={{ padding: 20, border: "1px solid #9bc8f1", borderRadius: 18, background: "linear-gradient(160deg,#fff,#edf7ff)", boxShadow: "0 14px 30px rgba(25,107,181,.12)" }}>
       <div style={{ display: "inline-flex", padding: "6px 9px", borderRadius: 999, color: "#28614c", background: "#edf9f3", fontSize: 10, fontWeight: 850 }}>CONNECTED</div>
       <div style={{ width: 42, height: 42, display: "grid", placeItems: "center", marginTop: 16, borderRadius: 12, color: "#1f67c8", background: "#e8f3ff" }}>{icon}</div>
