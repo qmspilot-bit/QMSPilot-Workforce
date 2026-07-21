@@ -1,6 +1,6 @@
 "use client";
 
-import { Boxes, ExternalLink, X } from "lucide-react";
+import { Boxes, ExternalLink, FileWarning, X } from "lucide-react";
 import { useState } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
@@ -9,6 +9,18 @@ const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
 export function NorthstarToolboxLauncher() {
   const [open, setOpen] = useState(false);
 
+  const connectedCard = (title: string, description: string, href: string, icon: React.ReactNode) => (
+    <article style={{ padding: 20, border: "1px solid #9bc8f1", borderRadius: 18, background: "linear-gradient(160deg,#fff,#edf7ff)", boxShadow: "0 14px 30px rgba(25,107,181,.12)" }}>
+      <div style={{ display: "inline-flex", padding: "6px 9px", borderRadius: 999, color: "#28614c", background: "#edf9f3", fontSize: 10, fontWeight: 850 }}>CONNECTED</div>
+      <div style={{ width: 42, height: 42, display: "grid", placeItems: "center", marginTop: 16, borderRadius: 12, color: "#1f67c8", background: "#e8f3ff" }}>{icon}</div>
+      <h3 style={{ margin: "14px 0 8px", color: "#0e1b31", fontSize: 20 }}>{title}</h3>
+      <p style={{ color: "#53677d", fontSize: 12, lineHeight: 1.55 }}>{description}</p>
+      <a href={href} style={{ marginTop: 18, minHeight: 42, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 11, color: "white", background: "linear-gradient(135deg,#0d315c,#1f67c8)", fontSize: 12, fontWeight: 850, textDecoration: "none" }}>
+        Open {title.includes("CAPA") ? "CAPA" : "NCR"} <ExternalLink size={15}/>
+      </a>
+    </article>
+  );
+
   return (
     <>
       <button
@@ -16,23 +28,12 @@ export function NorthstarToolboxLauncher() {
         onClick={() => setOpen(true)}
         aria-label="Open Northstar Digital Toolbox"
         style={{
-          position: "fixed",
-          top: 70,
-          right: 20,
-          zIndex: 180,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 9,
-          minHeight: 44,
-          padding: "0 16px",
-          border: "1px solid #8fbbe9",
-          borderRadius: 999,
-          color: "white",
+          position: "fixed", top: 70, right: 20, zIndex: 180, display: "inline-flex",
+          alignItems: "center", gap: 9, minHeight: 44, padding: "0 16px",
+          border: "1px solid #8fbbe9", borderRadius: 999, color: "white",
           background: "linear-gradient(135deg,#0d315c,#1f67c8)",
-          boxShadow: "0 14px 36px rgba(17,74,137,.28)",
-          fontSize: 12,
-          fontWeight: 850,
-          cursor: "pointer",
+          boxShadow: "0 14px 36px rgba(17,74,137,.28)", fontSize: 12,
+          fontWeight: 850, cursor: "pointer",
         }}
       >
         <Boxes size={17} />
@@ -40,41 +41,9 @@ export function NorthstarToolboxLauncher() {
       </button>
 
       {open && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Northstar Digital Toolbox"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 500,
-            display: "grid",
-            placeItems: "center",
-            padding: 18,
-            background: "rgba(4,17,31,.82)",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <div style={{
-            width: "min(980px,100%)",
-            maxHeight: "92vh",
-            overflow: "auto",
-            border: "1px solid #365b7b",
-            borderRadius: 22,
-            background: "#f7fbff",
-            boxShadow: "0 35px 100px rgba(0,0,0,.5)",
-          }}>
-            <header style={{
-              position: "sticky",
-              top: 0,
-              zIndex: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "16px 18px",
-              color: "white",
-              background: "linear-gradient(135deg,#071a31,#123f73)",
-            }}>
+        <div role="dialog" aria-modal="true" aria-label="Northstar Digital Toolbox" style={{ position: "fixed", inset: 0, zIndex: 500, display: "grid", placeItems: "center", padding: 18, background: "rgba(4,17,31,.82)", backdropFilter: "blur(10px)" }}>
+          <div style={{ width: "min(980px,100%)", maxHeight: "92vh", overflow: "auto", border: "1px solid #365b7b", borderRadius: 22, background: "#f7fbff", boxShadow: "0 35px 100px rgba(0,0,0,.5)" }}>
+            <header style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", color: "white", background: "linear-gradient(135deg,#071a31,#123f73)" }}>
               <Boxes size={22} />
               <div style={{ marginRight: "auto" }}>
                 <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "#9ec8ee" }}>QMSPilot Northstar</div>
@@ -89,16 +58,20 @@ export function NorthstarToolboxLauncher() {
               </p>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
-                <article style={{ padding: 20, border: "1px solid #9bc8f1", borderRadius: 18, background: "linear-gradient(160deg,#fff,#edf7ff)", boxShadow: "0 14px 30px rgba(25,107,181,.12)" }}>
-                  <div style={{ display: "inline-flex", padding: "6px 9px", borderRadius: 999, color: "#28614c", background: "#edf9f3", fontSize: 10, fontWeight: 850 }}>CONNECTED</div>
-                  <h3 style={{ margin: "16px 0 8px", color: "#0e1b31", fontSize: 20 }}>Corrective Action & CAPA</h3>
-                  <p style={{ color: "#53677d", fontSize: 12, lineHeight: 1.55 }}>Contain, investigate, assign accountable actions, verify effectiveness, and submit the controlled CAPA record to Northstar.</p>
-                  <a href={CAPA_URL} target="_blank" rel="noreferrer" style={{ marginTop: 18, minHeight: 42, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 11, color: "white", background: "linear-gradient(135deg,#0d315c,#1f67c8)", fontSize: 12, fontWeight: 850, textDecoration: "none" }}>
-                    Open CAPA <ExternalLink size={15}/>
-                  </a>
-                </article>
+                {connectedCard(
+                  "Corrective Action & CAPA",
+                  "Contain, investigate, assign accountable actions, verify effectiveness, and submit the controlled CAPA record to Northstar.",
+                  CAPA_URL,
+                  <Boxes size={21} />,
+                )}
+                {connectedCard(
+                  "Nonconformance Report",
+                  "Capture nonconforming output, containment, disposition, evidence, COPQ, corrective actions, and submit the controlled NCR record to Northstar.",
+                  "/tools/ncr",
+                  <FileWarning size={21} />,
+                )}
 
-                {["Nonconformance Report", "6S & Process Audits", "Training, Calibration & More"].map((title) => (
+                {["6S & Process Audits", "Training, Calibration & More"].map((title) => (
                   <article key={title} style={{ padding: 20, border: "1px solid #d7e2ec", borderRadius: 18, background: "white", opacity: .78 }}>
                     <div style={{ display: "inline-flex", padding: "6px 9px", borderRadius: 999, color: "#6a7887", background: "#eef2f5", fontSize: 10, fontWeight: 850 }}>ROADMAP</div>
                     <h3 style={{ margin: "16px 0 8px", color: "#0e1b31", fontSize: 18 }}>{title}</h3>
