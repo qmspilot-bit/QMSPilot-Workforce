@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { CloudWorkspaceProvider } from "@/components/cloud-workspace";
 import { NcrToolLauncher } from "@/components/ncr-tool-launcher";
+import { NorthstarToolboxLauncher } from "@/components/northstar-toolbox-launcher";
 
 export const metadata: Metadata = {
-  title: "Pilot | QMSPilot Workforce",
-  description: "AI Chief of Staff for operational accountability.",
+  title: "Northstar | QMSPilot Workforce",
+  description: "QMSPilot Northstar mission control, AI workforce, and digital toolbox.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <CloudWorkspaceProvider>
           {children}
+          <NorthstarToolboxLauncher />
           <NcrToolLauncher />
         </CloudWorkspaceProvider>
       </body>
