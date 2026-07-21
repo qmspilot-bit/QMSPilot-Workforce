@@ -10,6 +10,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { PilotAnalysis, Priority, Severity } from "@/lib/types";
 import { ActionBoard } from "@/components/action-board";
 import { CloudAccount } from "@/components/cloud-workspace";
+import { DigitalToolbox } from "@/components/digital-toolbox";
 
 const sampleSource = `Internal audit observations\n\n1. Released manufacturing drawings are stored on a shared drive, but the documented process still identifies Lotus Notes as the controlled source.\n2. Preventive maintenance evidence was not available for the Höfler Rapid 1500 and 2600.\n3. Seven observations were discussed in a planning meeting, but a single action register with owners, due dates, and effectiveness checks has not yet been issued.\n4. Leadership agreed to meet every two weeks to drive improvement.\n5. The certification audit target is March 2027.`;
 
@@ -186,6 +187,7 @@ export default function Home() {
           <a href="#pilot-results"><ClipboardCheck />Action board</a>
           <a href="#pilot-results"><FileText />Briefings</a>
           <a href="#team"><Users />AI workforce</a>
+          <a href="#toolbox"><ClipboardCheck />Digital toolbox</a>
         </nav>
         <div className="team-mini" id="team">
           <p>Workforce</p>
@@ -233,6 +235,7 @@ export default function Home() {
           </form>
 
           {analysis ? <Results analysis={analysis} /> : <EmptyState />}
+          <DigitalToolbox />
         </div>
       </main>
     </div>
