@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CloudWorkspaceProvider } from "@/components/cloud-workspace";
-import { NcrToolLauncher } from "@/components/ncr-tool-launcher";
 import { NorthstarToolboxLauncher } from "@/components/northstar-toolbox-launcher";
 
 export const metadata: Metadata = {
@@ -16,7 +15,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CloudWorkspaceProvider>
           {children}
           <NorthstarToolboxLauncher />
-          <NcrToolLauncher />
         </CloudWorkspaceProvider>
       </body>
     </html>
