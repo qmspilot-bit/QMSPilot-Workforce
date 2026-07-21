@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./toolbox.css";
 import { CloudWorkspaceProvider } from "@/components/cloud-workspace";
 
 export const metadata: Metadata = {
-  title: "Pilot | QMSPilot Workforce",
-  description: "AI Chief of Staff for operational accountability.",
+  title: "Northstar | QMSPilot Workforce",
+  description: "QMSPilot Northstar mission control, AI workforce, and digital toolbox.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
