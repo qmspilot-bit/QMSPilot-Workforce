@@ -33,27 +33,53 @@ export async function GET() {
   </div>
   <script>
     window.addEventListener('DOMContentLoaded', function () {
-      const setValue = (id, value) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.value = value;
-        el.dispatchEvent(new Event('change', { bubbles: true }));
+      const configureNorthstar = () => {
+        const setValue = (id, value) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.value = value;
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        };
+
+        setValue('integrationMode', 'api');
+        setValue('organizationId', 'qmspilot-demo');
+        setValue('northstarUserId', 'northstar-demo-user');
+        setValue('northstarEndpoint', '${NORTHSTAR_ENDPOINT}');
+
+        ['organizationId','northstarUserId','northstarEndpoint','northstarToken','integrationMode'].forEach((id) => {
+          const el = document.getElementById(id);
+          const field = el && el.closest('.field');
+          if (field) field.style.display = 'none';
+        });
+
+        const headings = Array.from(document.querySelectorAll('.section-title-wrap h3'));
+        const heading = headings.find((node) => (node.textContent || '').includes('Northstar Integration'));
+        const section = heading && heading.closest('.card');
+        const note = section && section.querySelector('.integration-note');
+        if (note) note.innerHTML = '<strong style="color:#7cc7ff">Connected through Northstar.</strong> Company, user, and receiving service are supplied automatically for this demo session.';
+        if (typeof window.refreshAll === 'function') window.refreshAll();
       };
-      setValue('integrationMode', 'api');
-      setValue('organizationId', 'qmspilot-demo');
-      setValue('northstarUserId', 'northstar-demo-user');
-      setValue('northstarEndpoint', '${NORTHSTAR_ENDPOINT}');
-      ['organizationId','northstarUserId','northstarEndpoint','northstarToken','integrationMode'].forEach((id) => {
-        const el = document.getElementById(id);
-        const field = el && el.closest('.field');
-        if (field) field.style.display = 'none';
-      });
-      const headings = Array.from(document.querySelectorAll('.section-title-wrap h3'));
-      const heading = headings.find((node) => (node.textContent || '').includes('Northstar Integration'));
-      const section = heading && heading.closest('.card');
-      const note = section && section.querySelector('.integration-note');
-      if (note) note.innerHTML = '<strong style="color:#7cc7ff">Connected through Northstar.</strong> Company, user, and receiving service are supplied automatically for this demo session.';
-      if (typeof window.refreshAll === 'function') window.refreshAll();
+
+      const originalInitializeDefaults = window.initializeDefaults;
+      if (typeof originalInitializeDefaults === 'function') {
+        window.initializeDefaults = function (...args) {
+          const result = originalInitializeDefaults.apply(this, args);
+          setTimeout(configureNorthstar, 0);
+          return result;
+        };
+      }
+
+      setTimeout(configureNorthstar, 0);
+      setTimeout(configureNorthstar, 150);
+
+      document.addEventListener('click', function (event) {
+        const button = event.target && event.target.closest ? event.target.closest('button') : null;
+        const text = button ? (button.textContent || '').trim().toLowerCase() : '';
+        if (text.includes('load demo') || text.includes('new ncr')) {
+          setTimeout(configureNorthstar, 50);
+          setTimeout(configureNorthstar, 250);
+        }
+      }, true);
     });
   </script>`;
 
