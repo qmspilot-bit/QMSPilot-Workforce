@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/northstar-operating-rhythm",
-      "schedule": "0 12 * * 1-5"
-    }
-  ]
-}
