@@ -1,10 +1,9 @@
 "use client";
 
-import { BadgeDollarSign, BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, Gauge, GraduationCap, HeartHandshake, Network, PackageCheck, Truck, Wrench, X } from "lucide-react";
+import { BadgeDollarSign, BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, Gauge, GraduationCap, HeartHandshake, Network, PackageCheck, Share2, Truck, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
-const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
-  "https://qmspilot-bit.github.io/QMSPilot-Corrective-Action-CAPA-Northstar/";
+const CAPA_URL = "/tools/capa";
 
 export function NorthstarToolboxLauncher() {
   const [open, setOpen] = useState(false);
@@ -64,7 +63,8 @@ export function NorthstarToolboxLauncher() {
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
                 {connectedCard("AI Workforce Operations", "Operate the Intelligence Bus, review agent assignments, generate Pilot briefings, approve recommendations, track cross-tool actions, and govern writeback.", "/workforce-operations", <Network size={21} />, "Open Operations Center")}
-                {connectedCard("Corrective Action & CAPA", "Contain, investigate, assign accountable actions, verify effectiveness, and submit the controlled CAPA record to Northstar.", CAPA_URL, <Boxes size={21} />, "Open CAPA")}
+                {connectedCard("Entity Graph", "Connect customers, orders, products, suppliers, assets, people, and controlled records into one source-event-traceable business context.", "/entity-graph", <Share2 size={21} />, "Open Entity Graph")}
+                {connectedCard("Corrective Action & CAPA", "Contain, investigate, assign accountable actions, verify effectiveness, submit to the Intelligence Bus, and receive approved closed-loop actions.", CAPA_URL, <Boxes size={21} />, "Open CAPA")}
                 {connectedCard("Nonconformance Report", "Capture nonconforming output, containment, disposition, evidence, COPQ, corrective actions, and submit the controlled NCR record to Northstar.", "/tools/ncr", <FileWarning size={21} />, "Open NCR")}
                 {connectedCard("Process Assurance", "Run layered process audits, verify standards at the point of work, assign containment, and submit operating intelligence to Northstar.", "/tools/process-assurance", <ClipboardCheck size={21} />, "Open Process Assurance")}
                 {connectedCard("Workforce Readiness", "Control the skills matrix, qualification evidence, cross-training priorities, expiration risk, and critical-process coverage.", "/tools/workforce-readiness", <GraduationCap size={21} />, "Open Workforce Readiness")}
@@ -77,11 +77,11 @@ export function NorthstarToolboxLauncher() {
                 {connectedCard("Delivery Assurance", "Protect customer commitments with order readiness, production status, constraint recovery, financial exposure, and verified shipment release.", "/tools/delivery-assurance", <PackageCheck size={21} />, "Open Delivery Assurance")}
                 {connectedCard("Value Ledger", "Convert operational loss, recovery, savings, avoided cost, and protected revenue into financially validated executive intelligence and QMSPilot ROI.", "/tools/value-ledger", <BadgeDollarSign size={21} />, "Open Value Ledger")}
 
-                {["Enterprise Risk & More"].map((title) => (
+                {["Management Review & Enterprise Risk"].map((title) => (
                   <article key={title} style={{ padding: 20, border: "1px solid #d7e2ec", borderRadius: 18, background: "white", opacity: .78 }}>
                     <div style={{ display: "inline-flex", padding: "6px 9px", borderRadius: 999, color: "#6a7887", background: "#eef2f5", fontSize: 10, fontWeight: 850 }}>ROADMAP</div>
                     <h3 style={{ margin: "16px 0 8px", color: "#0e1b31", fontSize: 18 }}>{title}</h3>
-                    <p style={{ color: "#53677d", fontSize: 12, lineHeight: 1.55 }}>Additional Northstar production applications will appear here as they become available.</p>
+                    <p style={{ color: "#53677d", fontSize: 12, lineHeight: 1.55 }}>The next leadership application will use connected execution, risk, evidence, and value data already flowing through Northstar.</p>
                   </article>
                 ))}
               </div>
