@@ -1,6 +1,6 @@
 "use client";
 
-import { Boxes, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, Wrench, X } from "lucide-react";
+import { BookOpenCheck, Boxes, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
@@ -12,7 +12,6 @@ export function NorthstarToolboxLauncher() {
   useEffect(() => {
     const openFromUrl = new URLSearchParams(window.location.search).get("toolbox") === "open";
     if (openFromUrl) setOpen(true);
-
     const openToolbox = () => setOpen(true);
     window.addEventListener("qmspilot:open-toolbox", openToolbox);
     return () => window.removeEventListener("qmspilot:open-toolbox", openToolbox);
@@ -42,21 +41,8 @@ export function NorthstarToolboxLauncher() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Open Northstar Digital Toolbox"
-        style={{
-          position: "fixed", top: 70, right: 20, zIndex: 180, display: "inline-flex",
-          alignItems: "center", gap: 9, minHeight: 44, padding: "0 16px",
-          border: "1px solid #8fbbe9", borderRadius: 999, color: "white",
-          background: "linear-gradient(135deg,#0d315c,#1f67c8)",
-          boxShadow: "0 14px 36px rgba(17,74,137,.28)", fontSize: 12,
-          fontWeight: 850, cursor: "pointer",
-        }}
-      >
-        <Boxes size={17} />
-        Digital Toolbox
+      <button type="button" onClick={() => setOpen(true)} aria-label="Open Northstar Digital Toolbox" style={{ position: "fixed", top: 70, right: 20, zIndex: 180, display: "inline-flex", alignItems: "center", gap: 9, minHeight: 44, padding: "0 16px", border: "1px solid #8fbbe9", borderRadius: 999, color: "white", background: "linear-gradient(135deg,#0d315c,#1f67c8)", boxShadow: "0 14px 36px rgba(17,74,137,.28)", fontSize: 12, fontWeight: 850, cursor: "pointer" }}>
+        <Boxes size={17} /> Digital Toolbox
       </button>
 
       {open && (
@@ -77,41 +63,12 @@ export function NorthstarToolboxLauncher() {
               </p>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
-                {connectedCard(
-                  "Corrective Action & CAPA",
-                  "Contain, investigate, assign accountable actions, verify effectiveness, and submit the controlled CAPA record to Northstar.",
-                  CAPA_URL,
-                  <Boxes size={21} />,
-                  "Open CAPA",
-                )}
-                {connectedCard(
-                  "Nonconformance Report",
-                  "Capture nonconforming output, containment, disposition, evidence, COPQ, corrective actions, and submit the controlled NCR record to Northstar.",
-                  "/tools/ncr",
-                  <FileWarning size={21} />,
-                  "Open NCR",
-                )}
-                {connectedCard(
-                  "Process Assurance",
-                  "Run layered process audits, verify standards at the point of work, assign containment, and submit operating intelligence to Northstar.",
-                  "/tools/process-assurance",
-                  <ClipboardCheck size={21} />,
-                  "Open Process Assurance",
-                )}
-                {connectedCard(
-                  "Workforce Readiness",
-                  "Control the skills matrix, qualification evidence, cross-training priorities, expiration risk, and critical-process coverage.",
-                  "/tools/workforce-readiness",
-                  <GraduationCap size={21} />,
-                  "Open Workforce Readiness",
-                )}
-                {connectedCard(
-                  "Asset Reliability",
-                  "Control the asset register, preventive maintenance, work orders, downtime cost, evidence, and verified return to service.",
-                  "/tools/asset-reliability",
-                  <Wrench size={21} />,
-                  "Open Asset Reliability",
-                )}
+                {connectedCard("Corrective Action & CAPA", "Contain, investigate, assign accountable actions, verify effectiveness, and submit the controlled CAPA record to Northstar.", CAPA_URL, <Boxes size={21} />, "Open CAPA")}
+                {connectedCard("Nonconformance Report", "Capture nonconforming output, containment, disposition, evidence, COPQ, corrective actions, and submit the controlled NCR record to Northstar.", "/tools/ncr", <FileWarning size={21} />, "Open NCR")}
+                {connectedCard("Process Assurance", "Run layered process audits, verify standards at the point of work, assign containment, and submit operating intelligence to Northstar.", "/tools/process-assurance", <ClipboardCheck size={21} />, "Open Process Assurance")}
+                {connectedCard("Workforce Readiness", "Control the skills matrix, qualification evidence, cross-training priorities, expiration risk, and critical-process coverage.", "/tools/workforce-readiness", <GraduationCap size={21} />, "Open Workforce Readiness")}
+                {connectedCard("Asset Reliability", "Control the asset register, preventive maintenance, work orders, downtime cost, evidence, and verified return to service.", "/tools/asset-reliability", <Wrench size={21} />, "Open Asset Reliability")}
+                {connectedCard("Controlled Change", "Control documents, impact assessments, approval routing, training readiness, revision release, and point-of-use verification.", "/tools/controlled-change", <BookOpenCheck size={21} />, "Open Controlled Change")}
 
                 {["Calibration, Supplier Quality & More"].map((title) => (
                   <article key={title} style={{ padding: 20, border: "1px solid #d7e2ec", borderRadius: 18, background: "white", opacity: .78 }}>
