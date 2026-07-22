@@ -1,313 +1,163 @@
 "use client";
 
-import Image from "next/image";
 import {
-  AlertTriangle, Archive, ArrowRight, Bot, BrainCircuit, CheckCircle2, ChevronRight,
-  ClipboardCheck, Clock3, Download, FileText, Files, Gauge, Menu, PanelLeftClose,
-  Printer, RefreshCw, ShieldCheck, Sparkles, Target, UploadCloud, Users, X,
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  Bot,
+  BrainCircuit,
+  BriefcaseBusiness,
+  CheckCircle2,
+  ChevronRight,
+  CircleDollarSign,
+  ClipboardCheck,
+  Clock3,
+  Factory,
+  Gauge,
+  HeartPulse,
+  LineChart,
+  Menu,
+  PackageCheck,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Users,
+  Wrench,
+  X,
+  Zap,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { PilotAnalysis, Priority, Severity } from "@/lib/types";
-import { ActionBoard } from "@/components/action-board";
-import { CloudAccount } from "@/components/cloud-workspace";
+import { useMemo, useState } from "react";
 
-const sampleSource = `Internal audit observations\n\n1. Released manufacturing drawings are stored on a shared drive, but the documented process still identifies Lotus Notes as the controlled source.\n2. Preventive maintenance evidence was not available for the Höfler Rapid 1500 and 2600.\n3. Seven observations were discussed in a planning meeting, but a single action register with owners, due dates, and effectiveness checks has not yet been issued.\n4. Leadership agreed to meet every two weeks to drive improvement.\n5. The certification audit target is March 2027.`;
+const periods = ["Today", "Week", "Month", "Quarter", "Year"] as const;
+type Period = (typeof periods)[number];
 
-const northstarMission = `Review Northstar Precision Systems' audit-readiness evidence.
+const aiWorkforce = [
+  { name: "Pilot", title: "Chief of Staff", score: 96, status: "Live", kpi: "Executive decisions prepared", value: "12", impact: "$84.7K protected", icon: BrainCircuit },
+  { name: "Atlas", title: "Quality Intelligence", score: 93, status: "Live", kpi: "Quality risks resolved", value: "28", impact: "4 escapes prevented", icon: ShieldCheck },
+  { name: "Forge", title: "Operations Intelligence", score: 89, status: "Live", kpi: "Throughput opportunities", value: "7", impact: "+6.4% capacity", icon: Factory },
+  { name: "Sentinel", title: "Compliance Intelligence", score: 97, status: "Live", kpi: "Audit readiness", value: "96%", impact: "3 controls watched", icon: ClipboardCheck },
+  { name: "Vector", title: "Continuous Improvement", score: 91, status: "Live", kpi: "Verified savings YTD", value: "$238K", impact: "14 projects active", icon: TrendingUp },
+  { name: "Beacon", title: "Customer Intelligence", score: 88, status: "Ready", kpi: "Customer health", value: "92%", impact: "2 accounts watched", icon: HeartPulse },
+  { name: "Ledger", title: "Financial Intelligence", score: 94, status: "Ready", kpi: "Value realization", value: "4.7x", impact: "ROI on QMS activity", icon: CircleDollarSign },
+  { name: "Nexus", title: "Growth Intelligence", score: 86, status: "Ready", kpi: "Growth opportunities", value: "9", impact: "$1.2M pipeline", icon: Rocket },
+];
 
-Cross-reference every attached document. Identify what genuinely requires leadership attention, cite the exact file and record ID for each conclusion, and produce a prioritized action plan with accountable owners, calendar dates, and objective closure evidence.
+const healthDimensions = [
+  ["Quality", 94, "First-pass yield and corrective-action health"],
+  ["Delivery", 90, "Schedule adherence and capacity confidence"],
+  ["Customer", 92, "Complaint, responsiveness, and account risk"],
+  ["Compliance", 96, "ISO readiness and control effectiveness"],
+  ["Workforce", 87, "Training, ownership, and execution capacity"],
+  ["Improvement", 91, "Savings, velocity, and opportunity conversion"],
+] as const;
 
-Distinguish direct evidence from inference. Call out contradictions and uncertainty where the evidence is incomplete. Some records are intentionally complete and current, so do not invent nonconformities.`;
+const priorities = [
+  { level: "Critical", title: "Recover two overdue CAPA commitments", owner: "Atlas", due: "Today", value: "$42K exposure" },
+  { level: "High", title: "Approve supplier containment recommendation", owner: "Pilot", due: "Today", value: "Customer protection" },
+  { level: "High", title: "Resolve Line 3 throughput constraint", owner: "Forge", due: "48 hours", value: "+7% output" },
+  { level: "Medium", title: "Close three effectiveness checks", owner: "Sentinel", due: "This week", value: "Audit confidence" },
+];
 
-const severityRank: Record<Severity, number> = { critical: 4, high: 3, medium: 2, low: 1 };
-
-function Pill({ value }: { value: Severity | Priority }) {
-  return <span className={`pill pill-${value}`}>{value}</span>;
+function scoreTone(score: number) {
+  if (score >= 93) return "#37d39a";
+  if (score >= 87) return "#64a9ff";
+  return "#ffbf5b";
 }
 
-type PilotFinding = PilotAnalysis["keyFindings"][number];
-
-function isAssuranceFinding(finding: PilotFinding) {
-  const signal = `${finding.category} ${finding.title}`.toLowerCase();
-  return ["positive assurance", "control working", "effective control", "clean control"]
-    .some((phrase) => signal.includes(phrase));
+function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <section style={{ border: "1px solid #dce6ef", borderRadius: 20, background: "#fff", boxShadow: "0 12px 34px rgba(24,55,83,.08)", ...style }}>{children}</section>;
 }
 
-function FindingCard({ finding, assurance = false }: { finding: PilotFinding; assurance?: boolean }) {
-  return (
-    <article className={`finding-card${assurance ? " finding-card-assurance" : ""}`}>
-      <div className="card-top"><span className="finding-id">{finding.id}</span><Pill value={finding.severity} /></div>
-      <p className="category">{finding.category}</p>
-      <h4>{finding.title}</h4>
-      <dl>
-        <div><dt>Evidence</dt><dd>{finding.evidence}</dd></div>
-        <div><dt>Operational impact</dt><dd>{finding.impact}</dd></div>
-        <div className="recommendation"><dt>Recommended response</dt><dd>{finding.recommendation}</dd></div>
-      </dl>
-    </article>
-  );
-}
-
-function EmptyState() {
-  return (
-    <section className="empty-state">
-      <div className="empty-orbit"><BrainCircuit size={36} /></div>
-      <p className="eyebrow">Pilot is standing by</p>
-      <h2>Turn information into accountable action.</h2>
-      <p>Paste a process, audit result, customer requirement, meeting note, or improvement idea. Pilot will identify the material gaps and prepare the executive action brief.</p>
-      <div className="workflow-strip">
-        {[
-          [FileText, "Understand"],
-          [AlertTriangle, "Find gaps"],
-          [Target, "Prioritize"],
-          [ClipboardCheck, "Assign"],
-          [ShieldCheck, "Verify"],
-        ].map(([Icon, label], index) => {
-          const I = Icon as typeof FileText;
-          return <div className="workflow-step" key={label as string}><I size={17} /><span>{label as string}</span>{index < 4 && <ChevronRight size={14} />}</div>;
-        })}
-      </div>
-    </section>
-  );
-}
-
-function Results({ analysis }: { analysis: PilotAnalysis }) {
-  const sortedFindings = [...analysis.keyFindings].sort((a, b) => severityRank[b.severity] - severityRank[a.severity]);
-  const assuranceFindings = sortedFindings.filter(isAssuranceFinding);
-  const attentionFindings = sortedFindings.filter((finding) => !isAssuranceFinding(finding));
-  const highRisks = attentionFindings.filter((f) => severityRank[f.severity] >= 3).length;
-  return (
-    <div className="results" id="pilot-results">
-      {analysis.mode === "demo" && (
-        <div className="demo-banner"><Sparkles size={17} /><span><strong>Demo intelligence:</strong> add an OpenAI API key to activate document-specific analysis.</span></div>
-      )}
-      <section className="brief-hero">
-        <div>
-          <p className="eyebrow">Executive briefing</p>
-          <h2>{analysis.title}</h2>
-          <p>{analysis.executiveSummary}</p>
-        </div>
-        <div className="confidence-card">
-          <Gauge size={22} />
-          <span>Confidence</span>
-          <strong>{analysis.confidence}</strong>
-        </div>
-      </section>
-
-      <div className="metric-grid">
-        <div className="metric"><AlertTriangle /><span>Findings reviewed</span><strong>{analysis.keyFindings.length}</strong></div>
-        <div className="metric"><ClipboardCheck /><span>Recommended actions</span><strong>{analysis.actions.length}</strong></div>
-        <div className="metric"><ShieldCheck /><span>High-risk items</span><strong>{highRisks}</strong></div>
-        <div className="metric"><BrainCircuit /><span>Decisions needed</span><strong>{analysis.decisionsNeeded.length}</strong></div>
-      </div>
-
-      <section className="panel">
-        <div className="section-heading"><div><p className="eyebrow">01 / Findings</p><h3>What Pilot found</h3></div><span>{analysis.sourceOverview}</span></div>
-        <div className="findings-group">
-          <div className="findings-group-heading">
-            <span><AlertTriangle size={17} />Issues requiring attention</span>
-            <strong>{attentionFindings.length}</strong>
-          </div>
-          <div className="findings-grid">
-            {attentionFindings.map((finding) => <FindingCard finding={finding} key={finding.id} />)}
-          </div>
-        </div>
-        {assuranceFindings.length > 0 && (
-          <div className="findings-group findings-group-assurance">
-            <div className="findings-group-heading findings-group-heading-assurance">
-              <span><ShieldCheck size={17} />Controls working as intended</span>
-              <strong>{assuranceFindings.length}</strong>
-            </div>
-            <div className="findings-grid findings-grid-assurance">
-              {assuranceFindings.map((finding) => <FindingCard assurance finding={finding} key={finding.id} />)}
-            </div>
-          </div>
-        )}
-      </section>
-
-      <ActionBoard analysis={analysis} />
-
-      <section className="panel briefing-panel">
-        <div className="section-heading"><div><p className="eyebrow">05 / Briefing rhythm</p><h3>What happens next</h3></div></div>
-        <div className="brief-columns">
-          <div><span>Today</span>{analysis.brief.today.map((x) => <p key={x}><CheckCircle2 size={15} />{x}</p>)}</div>
-          <div><span>Next 7 days</span>{analysis.brief.next7Days.map((x) => <p key={x}><ArrowRight size={15} />{x}</p>)}</div>
-          <div><span>Watchlist</span>{analysis.brief.watchlist.map((x) => <p key={x}><AlertTriangle size={15} />{x}</p>)}</div>
-        </div>
-        <p className="disclaimer">{analysis.disclaimer}</p>
-      </section>
-    </div>
-  );
-}
-
-export default function Home() {
+export default function NorthstarCommandCenter() {
+  const [period, setPeriod] = useState<Period>("Month");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [context, setContext] = useState("");
-  const [sourceText, setSourceText] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [analysis, setAnalysis] = useState<PilotAnalysis | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem("qmspilot:last-analysis");
-    if (saved) {
-      try { setAnalysis(JSON.parse(saved)); } catch { /* ignore stale local data */ }
-    }
-  }, []);
-
-  const canAnalyze = useMemo(() => Boolean(sourceText.trim() || files.length), [sourceText, files]);
-
-  async function analyze(event: FormEvent) {
-    event.preventDefault();
-    if (!canAnalyze || loading) return;
-    setLoading(true);
-    setError("");
-    const form = new FormData();
-    form.set("title", title);
-    form.set("context", context);
-    form.set("sourceText", sourceText);
-    files.forEach((file) => form.append("files", file));
-    try {
-      const response = await fetch("/api/analyze", { method: "POST", body: form });
-      const responseText = await response.text();
-      let payload: PilotAnalysis | { error?: string };
-      try {
-        payload = JSON.parse(responseText) as PilotAnalysis | { error?: string };
-      } catch {
-        throw new Error(
-          response.ok
-            ? "Pilot returned an unreadable response. Please try again."
-            : "Pilot's analysis service was interrupted. Please try again.",
-        );
-      }
-      if (!response.ok) {
-        const message = "error" in payload ? payload.error : undefined;
-        throw new Error(message || "Pilot could not complete the review.");
-      }
-      const completedAnalysis = payload as PilotAnalysis;
-      setAnalysis(completedAnalysis);
-      window.localStorage.setItem("qmspilot:last-analysis", JSON.stringify(completedAnalysis));
-      window.setTimeout(() => document.getElementById("pilot-results")?.scrollIntoView({ behavior: "smooth" }), 120);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Pilot could not complete the review.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function reset() {
-    setAnalysis(null); setTitle(""); setContext(""); setSourceText(""); setFiles([]); setError("");
-    window.localStorage.removeItem("qmspilot:last-analysis");
-    if (fileRef.current) fileRef.current.value = "";
-  }
-
-  function loadNorthstar() {
-    setTitle("Northstar audit-readiness review");
-    setContext("Prepare a traceable, leadership-ready action brief for the 15 September 2026 surveillance audit.");
-    setSourceText(northstarMission);
-    setFiles([]);
-    setError("");
-    if (fileRef.current) fileRef.current.value = "";
-    window.setTimeout(() => document.getElementById("northstar-assignment")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-  }
-
-  function removeFile(index: number) {
-    setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index));
-    if (fileRef.current) fileRef.current.value = "";
-  }
-
-  function download() {
-    if (!analysis) return;
-    const blob = new Blob([JSON.stringify(analysis, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url; anchor.download = `pilot-analysis-${new Date().toISOString().slice(0, 10)}.json`; anchor.click();
-    URL.revokeObjectURL(url);
-  }
+  const companyHealth = useMemo(() => Math.round(healthDimensions.reduce((sum, [, score]) => sum + score, 0) / healthDimensions.length), []);
 
   return (
-    <div className="app-shell">
-      <aside className={sidebarOpen ? "sidebar sidebar-open" : "sidebar"}>
-        <div className="brand"><Image src="/qmspilot-logo.jpeg" alt="QMSPilot" width={190} height={62} priority /></div>
-        <button className="sidebar-close" onClick={() => setSidebarOpen(false)} aria-label="Close navigation"><PanelLeftClose /></button>
-        <div className="agent-card"><div className="agent-avatar"><Bot /></div><div><strong>Pilot</strong><span><i />Online · supervised</span></div></div>
-        <nav>
-          <a className="active" href="#mission"><BrainCircuit />Mission control</a>
-          <a href="#pilot-results"><ClipboardCheck />Action board</a>
-          <a href="#pilot-results"><FileText />Briefings</a>
-          <a href="#team"><Users />AI workforce</a>
-        </nav>
-        <div className="team-mini" id="team">
-          <p>Workforce</p>
-          {[['P', 'Pilot', 'Chief of Staff', 'active'], ['A', 'Atlas', 'Quality intelligence', 'next'], ['N', 'Nexus', 'Growth intelligence', 'next'], ['F', 'Forge', 'Product intelligence', 'next']].map(([letter, name, role, status]) => (
-            <div className="team-row" key={name}><span>{letter}</span><div><strong>{name}</strong><small>{role}</small></div><em className={status}>{status === 'active' ? 'Live' : 'Next'}</em></div>
-          ))}
+    <div style={{ minHeight: "100vh", background: "#edf3f8", color: "#12253a", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" }}>
+      <aside style={{ position: "fixed", inset: "0 auto 0 0", zIndex: 30, width: 252, padding: 18, color: "white", background: "linear-gradient(180deg,#061729,#0a2744)", transform: sidebarOpen ? "translateX(0)" : undefined }} className="northstar-sidebar">
+        <div style={{ padding: "15px 16px", borderRadius: 16, color: "#0c3154", background: "white", fontSize: 22, fontWeight: 950 }}>QMSPilot</div>
+        <button onClick={() => setSidebarOpen(false)} aria-label="Close navigation" style={{ display: "none", position: "absolute", right: 15, top: 16, border: 0, color: "white", background: "transparent" }} className="mobile-close"><X /></button>
+        <div style={{ margin: "18px 0", padding: 14, border: "1px solid #31516f", borderRadius: 15, background: "#102f4d" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ width: 40, height: 40, display: "grid", placeItems: "center", borderRadius: 12, background: "#1d6fce" }}><Bot size={21} /></span><div><strong style={{ display: "block" }}>Pilot</strong><small style={{ color: "#91b4d2" }}>Online · supervised</small></div></div>
         </div>
-        <div className="sidebar-footer"><ShieldCheck /><span><strong>Human approval gate</strong>External actions are blocked.</span></div>
+        <nav style={{ display: "grid", gap: 7 }}>
+          {[[Gauge,"Command center","/"],[ClipboardCheck,"Accountability","/dashboard"],[Wrench,"Digital toolbox","/toolbox"],[Users,"AI workforce","#ai-workforce"],[BarChart3,"Performance","#performance"]].map(([Icon,label,href]) => { const I = Icon as typeof Gauge; return <a key={String(label)} href={String(href)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "12px 13px", borderRadius: 11, color: label === "Command center" ? "white" : "#b9d0e4", background: label === "Command center" ? "#0d4a7c" : "transparent", textDecoration: "none", fontSize: 13, fontWeight: 800 }}><I size={18} />{String(label)}</a>; })}
+        </nav>
+        <div style={{ marginTop: 24, paddingTop: 18, borderTop: "1px solid #24455f" }}>
+          <small style={{ color: "#78a4c8", letterSpacing: ".13em", fontWeight: 900 }}>SYSTEM STATUS</small>
+          {["Northstar online","Human approval active","Evidence traceability on"].map((item) => <div key={item} style={{ display: "flex", gap: 8, marginTop: 12, color: "#c7d9e8", fontSize: 11 }}><CheckCircle2 size={15} color="#37d39a" />{item}</div>)}
+        </div>
       </aside>
-      {sidebarOpen && <button className="scrim" onClick={() => setSidebarOpen(false)} aria-label="Close navigation" />}
 
-      <main>
-        <header className="topbar">
-          <button className="menu-button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation"><Menu /></button>
-          <div><p>QMSPilot Workforce</p><strong>Mission Control</strong></div>
-          <div className="top-actions">
-            {analysis && <button className="quiet-button" onClick={download}><Download />Export</button>}
-            {analysis && <button className="quiet-button" onClick={() => window.print()}><Printer />Print</button>}
-            {analysis && <button className="quiet-button" onClick={reset}><RefreshCw />New review</button>}
-            <CloudAccount />
-            <span className="status-chip"><i />Pilot online</span>
+      <main style={{ marginLeft: 252 }} className="northstar-main">
+        <header style={{ position: "sticky", top: 0, zIndex: 20, display: "flex", alignItems: "center", gap: 14, minHeight: 68, padding: "0 24px", borderBottom: "1px solid #d9e4ed", background: "rgba(255,255,255,.94)", backdropFilter: "blur(12px)" }}>
+          <button onClick={() => setSidebarOpen(true)} aria-label="Open navigation" style={{ display: "none", border: 0, background: "transparent" }} className="mobile-menu"><Menu /></button>
+          <div style={{ marginRight: "auto" }}><small style={{ color: "#6a839a", fontWeight: 800, letterSpacing: ".1em" }}>QMSPILOT NORTHSTAR</small><strong style={{ display: "block", fontSize: 16 }}>Executive Command Center</strong></div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {periods.map((item) => <button key={item} onClick={() => setPeriod(item)} style={{ minHeight: 34, padding: "0 11px", border: period === item ? "1px solid #1769d2" : "1px solid #d7e1ea", borderRadius: 9, color: period === item ? "white" : "#526b82", background: period === item ? "#1769d2" : "white", fontSize: 11, fontWeight: 850 }}>{item}</button>)}
           </div>
         </header>
 
-        <div className="workspace" id="mission">
-          <section className="page-intro">
-            <div><p className="eyebrow">AI Chief of Staff · Pilot 1.1</p><h1>Good work starts with a clear mission.</h1><p>Give Pilot the evidence. Get back the gaps, risks, decisions, owners, due dates, and executive action brief.</p></div>
-            <div className="approval-note"><ShieldCheck /><div><strong>You remain the decision-maker.</strong><span>Pilot prepares and recommends. Nothing external happens without approval.</span></div></div>
+        <div style={{ maxWidth: 1560, margin: "0 auto", padding: "26px 24px 70px" }}>
+          <section style={{ display: "grid", gridTemplateColumns: "1.35fr .65fr", gap: 18 }} className="hero-grid">
+            <div style={{ padding: 30, borderRadius: 24, color: "white", background: "linear-gradient(135deg,#07192c,#0b477c 62%,#1769d2)", boxShadow: "0 24px 60px rgba(9,48,83,.25)" }}>
+              <div style={{ display: "flex", gap: 9, alignItems: "center", color: "#9fd3ff", fontSize: 11, fontWeight: 900, letterSpacing: ".12em" }}><Sparkles size={16} />PILOT EXECUTIVE BRIEFING</div>
+              <h1 style={{ maxWidth: 850, margin: "13px 0 12px", fontSize: "clamp(32px,4vw,58px)", lineHeight: 1.02 }}>Good evening, Donald. Your company is operating with strength.</h1>
+              <p style={{ maxWidth: 900, margin: 0, color: "#d4e7f7", fontSize: 15, lineHeight: 1.65 }}>Company health improved two points. Quality and compliance are under control. Leadership attention should move to two overdue commitments and one production constraint with measurable financial exposure.</p>
+              <div style={{ display: "flex", gap: 10, marginTop: 22, flexWrap: "wrap" }}><a href="/dashboard" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 16px", borderRadius: 11, color: "#08213a", background: "white", textDecoration: "none", fontWeight: 900 }}>Review decisions <ArrowRight size={17} /></a><a href="/toolbox" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 16px", border: "1px solid #6facdf", borderRadius: 11, color: "white", textDecoration: "none", fontWeight: 900 }}>Open digital toolbox <Wrench size={17} /></a></div>
+            </div>
+            <Card style={{ padding: 24, display: "grid", alignContent: "center", textAlign: "center" }}>
+              <small style={{ color: "#6e8497", fontWeight: 900, letterSpacing: ".12em" }}>COMPANY HEALTH</small>
+              <div style={{ width: 172, height: 172, margin: "17px auto", display: "grid", placeItems: "center", borderRadius: "50%", background: `conic-gradient(#1769d2 ${companyHealth * 3.6}deg,#e5edf4 0)` }}><div style={{ width: 132, height: 132, display: "grid", placeItems: "center", borderRadius: "50%", background: "white" }}><span><strong style={{ display: "block", fontSize: 48, lineHeight: 1 }}>{companyHealth}</strong><small style={{ color: "#71869a", fontWeight: 800 }}>out of 100</small></span></div></div>
+              <strong style={{ color: "#16835a", fontSize: 16 }}>Strong · improving</strong><small style={{ marginTop: 6, color: "#71869a" }}>Executive confidence: 94%</small>
+            </Card>
           </section>
 
-          <section className="scenario-lab" aria-labelledby="northstar-title">
-            <div className="scenario-copy">
-              <span className="scenario-badge"><Sparkles />Synthetic validation lab</span>
-              <p className="eyebrow">Northstar Precision Systems</p>
-              <h2 id="northstar-title">Put Pilot through a real cross-document test.</h2>
-              <p>A fictional manufacturer, mixed evidence formats, deliberate contradictions, and clean controls. Safe for product testing—no real customer data.</p>
-              <div className="scenario-features">
-                <span><Files /><strong>10 evidence files</strong>PDF, Word, and Excel</span>
-                <span><Target /><strong>Cross-document reasoning</strong>Trace conflicts to source records</span>
-                <span><ShieldCheck /><strong>False-positive controls</strong>Not every record is a problem</span>
-              </div>
-            </div>
-            <div className="scenario-actions">
-              <a className="scenario-secondary" href="/scenarios/northstar/northstar-evidence-pack.zip" download><Archive />Download evidence pack</a>
-              <button className="scenario-primary" type="button" onClick={loadNorthstar}><Sparkles />Load Northstar mission<ArrowRight /></button>
-              <small>Download, unzip, then attach evidence files 01–10 below.</small>
-            </div>
+          <section id="performance" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 13, marginTop: 18 }}>
+            {[
+              [Target,"First-pass yield","98.6%","+0.8 pts",Target],
+              [PackageCheck,"On-time delivery","94.2%","+2.1 pts",PackageCheck],
+              [CircleDollarSign,"Verified savings","$238K","YTD",CircleDollarSign],
+              [AlertTriangle,"Open high risk","3","-2 this week",AlertTriangle],
+              [Clock3,"Action closure","91%","On time",Clock3],
+              [ShieldCheck,"ISO readiness","96%","March 2027",ShieldCheck],
+            ].map(([labelKey,label,value,note,Icon]) => { const I = Icon as typeof Target; return <Card key={String(labelKey)} style={{ padding: 18 }}><I size={20} color="#1769d2" /><small style={{ display: "block", marginTop: 14, color: "#70859a", fontWeight: 900, letterSpacing: ".07em", textTransform: "uppercase" }}>{String(label)}</small><strong style={{ display: "block", marginTop: 6, fontSize: 27 }}>{String(value)}</strong><small style={{ color: "#16835a", fontWeight: 800 }}>{String(note)}</small></Card>; })}
           </section>
 
-          <form className="mission-card" id="northstar-assignment" onSubmit={analyze}>
-            <div className="mission-head"><div className="pilot-mark"><Sparkles /></div><div><p className="eyebrow">New assignment</p><h2>What should Pilot review?</h2></div><button type="button" className="sample-button" onClick={() => { setTitle("ISO Internal Audit Follow-up"); setContext("Prepare a practical action plan for leadership and the biweekly improvement cadence."); setSourceText(sampleSource); setFiles([]); if (fileRef.current) fileRef.current.value = ""; }}>Load simple example</button></div>
-            <div className="form-grid">
-              <label><span>Assignment title</span><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Example: Internal audit follow-up" maxLength={120} /></label>
-              <label><span>Business context</span><input value={context} onChange={(e) => setContext(e.target.value)} placeholder="What outcome do you need?" maxLength={400} /></label>
-            </div>
-            <label className="source-label"><span>Source information</span><textarea value={sourceText} onChange={(e) => setSourceText(e.target.value)} placeholder="Paste audit notes, customer requirements, meeting notes, a process description, or an improvement opportunity..." rows={8} /></label>
-            <div className="mission-footer">
-              <label className="upload-button"><UploadCloud /><span>{files.length ? `${files.length} evidence file${files.length === 1 ? "" : "s"} attached` : "Attach evidence files"}</span><input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.tsv,.txt,.md,.json,.html,.xml,.rtf,.odt" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} /></label>
-              {files.length > 0 && <button type="button" className="remove-file" onClick={() => { setFiles([]); if (fileRef.current) fileRef.current.value = ""; }}><X />Remove all</button>}
-              <span className="file-note">Up to 12 files · 15 MB each · 30 MB total</span>
-              <button className="analyze-button" disabled={!canAnalyze || loading} type="submit">{loading ? <><RefreshCw className="spin" />Pilot is reviewing...</> : <><BrainCircuit />Analyze and build action brief<ArrowRight /></>}</button>
-            </div>
-            {files.length > 0 && <div className="file-selection" aria-label="Attached evidence files">{files.map((attachedFile, index) => <span key={`${attachedFile.name}-${attachedFile.lastModified}`}><FileText /><span><strong>{attachedFile.name}</strong><small>{Math.max(1, Math.round(attachedFile.size / 1024))} KB</small></span><button type="button" onClick={() => removeFile(index)} aria-label={`Remove ${attachedFile.name}`}><X /></button></span>)}</div>}
-            {error && <div className="error-message"><AlertTriangle />{error}</div>}
-          </form>
+          <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginTop: 18 }} className="two-grid">
+            <Card style={{ padding: 22 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start" }}><div><small style={{ color: "#71869a", fontWeight: 900, letterSpacing: ".1em" }}>ENTERPRISE HEALTH MODEL</small><h2 style={{ margin: "5px 0 0" }}>What is driving the score</h2></div><Gauge color="#1769d2" /></div>
+              <div style={{ display: "grid", gap: 14, marginTop: 20 }}>{healthDimensions.map(([label,score,note]) => <div key={label}><div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span><strong>{label}</strong><small style={{ display: "block", color: "#7a8ea1", marginTop: 2 }}>{note}</small></span><strong style={{ color: scoreTone(score), fontSize: 19 }}>{score}</strong></div><div style={{ height: 8, marginTop: 8, overflow: "hidden", borderRadius: 999, background: "#e8eef4" }}><div style={{ width: `${score}%`, height: "100%", borderRadius: 999, background: scoreTone(score) }} /></div></div>)}</div>
+            </Card>
+            <Card style={{ padding: 22 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><div><small style={{ color: "#71869a", fontWeight: 900, letterSpacing: ".1em" }}>LEADERSHIP PRIORITIES</small><h2 style={{ margin: "5px 0 0" }}>Decisions that move the business</h2></div><Zap color="#c87a00" /></div>
+              <div style={{ marginTop: 14 }}>{priorities.map((item) => <div key={item.title} style={{ display: "grid", gridTemplateColumns: "86px 1fr auto", gap: 12, padding: "14px 0", borderTop: "1px solid #e6edf3", alignItems: "center" }} className="priority-row"><span style={{ padding: "5px 8px", borderRadius: 999, color: item.level === "Critical" ? "#a52d39" : "#96600b", background: item.level === "Critical" ? "#fff0f2" : "#fff7e8", fontSize: 10, fontWeight: 900, textAlign: "center" }}>{item.level}</span><span><strong style={{ display: "block", fontSize: 13 }}>{item.title}</strong><small style={{ color: "#74899d" }}>{item.owner} · {item.due}</small></span><strong style={{ color: "#1769d2", fontSize: 11 }}>{item.value}</strong></div>)}</div>
+            </Card>
+          </section>
 
-          {analysis ? <Results analysis={analysis} /> : <EmptyState />}
+          <section id="ai-workforce" style={{ marginTop: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 12, marginBottom: 12 }}><div><small style={{ color: "#71869a", fontWeight: 900, letterSpacing: ".12em" }}>AI WORKFORCE</small><h2 style={{ margin: "5px 0 0", fontSize: 26 }}>Every digital employee earns its seat.</h2></div><span style={{ color: "#657d92", fontSize: 12 }}>KPIs tied to operating outcomes—not activity theater.</span></div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 14 }}>{aiWorkforce.map(({ name,title,score,status,kpi,value,impact,icon:Icon }) => <Card key={name} style={{ padding: 18 }}><div style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 48, height: 48, display: "grid", placeItems: "center", borderRadius: 14, color: "#1769d2", background: "#eaf4ff" }}><Icon size={23} /></span><span style={{ marginRight: "auto" }}><strong style={{ display: "block", fontSize: 16 }}>{name}</strong><small style={{ color: "#71869a" }}>{title}</small></span><span style={{ color: status === "Live" ? "#16835a" : "#1769d2", fontSize: 10, fontWeight: 950 }}>{status.toUpperCase()}</span></div><div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginTop: 17, paddingTop: 15, borderTop: "1px solid #e6edf3" }}><span><small style={{ display: "block", color: "#71869a" }}>{kpi}</small><strong style={{ display: "block", marginTop: 4, fontSize: 22 }}>{value}</strong></span><span style={{ textAlign: "right" }}><small style={{ display: "block", color: "#71869a" }}>Performance</small><strong style={{ display: "block", marginTop: 4, color: scoreTone(score), fontSize: 22 }}>{score}</strong></span></div><div style={{ marginTop: 12, padding: "9px 11px", borderRadius: 10, color: "#31536d", background: "#f3f7fa", fontSize: 11, fontWeight: 800 }}>{impact}</div></Card>)}</div>
+          </section>
+
+          <section style={{ display: "grid", gridTemplateColumns: "1.2fr .8fr", gap: 18, marginTop: 18 }} className="two-grid">
+            <Card style={{ padding: 22 }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><LineChart color="#1769d2" /><div><small style={{ color: "#71869a", fontWeight: 900 }}>EXECUTION VELOCITY</small><h2 style={{ margin: "3px 0 0" }}>Northstar is converting risk into results.</h2></div></div><div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginTop: 20 }} className="mini-grid">{[["Actions completed","142"],["Avg. closure","9.4 days"],["Risks prevented","18"],["ROI multiple","4.7x"]].map(([label,value]) => <div key={label} style={{ padding: 14, borderRadius: 13, background: "#f4f8fb" }}><small style={{ color: "#71869a" }}>{label}</small><strong style={{ display: "block", marginTop: 5, fontSize: 20 }}>{value}</strong></div>)}</div></Card>
+            <Card style={{ padding: 22, color: "white", background: "linear-gradient(145deg,#0c3153,#1769d2)" }}><div style={{ display: "flex", gap: 9, color: "#a9d7ff", fontWeight: 900, fontSize: 11 }}><BriefcaseBusiness size={18} />PILOT RECOMMENDATION</div><h2 style={{ margin: "13px 0 9px", fontSize: 24 }}>Protect the customer, then unlock capacity.</h2><p style={{ margin: 0, color: "#d7e9f8", lineHeight: 1.6, fontSize: 13 }}>Approve the supplier containment package today. Assign Forge to the Line 3 constraint immediately afterward. Combined expected value: $126,000 in protected revenue and recoverable capacity.</p><a href="/dashboard" style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 17, color: "white", fontWeight: 900, textDecoration: "none" }}>Open decision queue <ChevronRight size={17} /></a></Card>
+          </section>
+
+          <p style={{ margin: "18px 2px 0", color: "#71869a", fontSize: 10, lineHeight: 1.5 }}>Northstar Command Center v1 combines connected quality records with configurable demonstration operating data until ERP, finance, customer, workforce, and production connectors are activated. All external actions remain behind a human approval gate.</p>
         </div>
       </main>
+
+      <style jsx global>{`
+        *{box-sizing:border-box} body{margin:0} button,a{font:inherit}
+        @media(max-width:1000px){.northstar-sidebar{transform:translateX(-100%);transition:.25s}.northstar-sidebar[style*="translateX(0)"]{transform:translateX(0)!important}.northstar-main{margin-left:0!important}.mobile-menu,.mobile-close{display:block!important}.hero-grid,.two-grid{grid-template-columns:1fr!important}.mini-grid{grid-template-columns:repeat(2,1fr)!important}}
+        @media(max-width:640px){.hero-grid{display:block!important}.hero-grid>section{margin-top:14px}.priority-row{grid-template-columns:70px 1fr!important}.priority-row>strong:last-child{grid-column:2}.mini-grid{grid-template-columns:1fr!important}}
+      `}</style>
     </div>
   );
 }
