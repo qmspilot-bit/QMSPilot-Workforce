@@ -1,5 +1,3 @@
-import NorthstarLiveCommandCenter from "@/components/northstar-live-command-center";
-
 export default function Home() {
-  return <NorthstarLiveCommandCenter />;
+  return <main style={{ padding: 40, fontFamily: "Arial, sans-serif" }}><h1>QMSPilot Northstar</h1><p>Closed-loop UI diagnostic.</p></main>;
 }
