@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, Truck, Wrench, X } from "lucide-react";
+import { BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, Gauge, GraduationCap, Truck, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
@@ -71,8 +71,9 @@ export function NorthstarToolboxLauncher() {
                 {connectedCard("Controlled Change", "Control documents, impact assessments, approval routing, training readiness, revision release, and point-of-use verification.", "/tools/controlled-change", <BookOpenCheck size={21} />, "Open Controlled Change")}
                 {connectedCard("Supplier Assurance", "Qualify suppliers, control the approved supplier list, measure quality and delivery, manage incoming issues, and close SCARs with verified effectiveness.", "/tools/supplier-assurance", <Truck size={21} />, "Open Supplier Assurance")}
                 {connectedCard("Daily Operations", "Run SQDCP, controlled shift handoffs, Tier 1 through Tier 3 meetings, cross-functional escalation, and verified daily actions.", "/tools/daily-operations", <CalendarClock size={21} />, "Open Daily Operations")}
+                {connectedCard("Measurement Assurance", "Control calibration, gage custody, intermediate verification, out-of-tolerance product impact, MSA, and human release authority.", "/tools/measurement-assurance", <Gauge size={21} />, "Open Measurement Assurance")}
 
-                {["Calibration & More"].map((title) => (
+                {["Customer Experience & More"].map((title) => (
                   <article key={title} style={{ padding: 20, border: "1px solid #d7e2ec", borderRadius: 18, background: "white", opacity: .78 }}>
                     <div style={{ display: "inline-flex", padding: "6px 9px", borderRadius: 999, color: "#6a7887", background: "#eef2f5", fontSize: 10, fontWeight: 850 }}>ROADMAP</div>
                     <h3 style={{ margin: "16px 0 8px", color: "#0e1b31", fontSize: 18 }}>{title}</h3>
