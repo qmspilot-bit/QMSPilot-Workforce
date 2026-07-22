@@ -1,6 +1,6 @@
 "use client";
 
-import { Boxes, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, X } from "lucide-react";
+import { Boxes, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
@@ -104,6 +104,13 @@ export function NorthstarToolboxLauncher() {
                   "/tools/workforce-readiness",
                   <GraduationCap size={21} />,
                   "Open Workforce Readiness",
+                )}
+                {connectedCard(
+                  "Asset Reliability",
+                  "Control the asset register, preventive maintenance, work orders, downtime cost, evidence, and verified return to service.",
+                  "/tools/asset-reliability",
+                  <Wrench size={21} />,
+                  "Open Asset Reliability",
                 )}
 
                 {["Calibration, Supplier Quality & More"].map((title) => (
