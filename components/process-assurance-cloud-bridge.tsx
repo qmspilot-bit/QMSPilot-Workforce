@@ -53,10 +53,15 @@ export function ProcessAssuranceCloudBridge() {
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
 
+    const organizationId = cloud.organizationId;
+    const organizationName = cloud.organizationName;
+    const user = cloud.user;
+    const cloudReady = cloud.status === "ready" && Boolean(organizationId && user);
+
     async function persist(event: Event) {
       const payload = (event as CustomEvent<ProcessAssurancePayload>).detail;
       if (!payload || payload.schema !== "qmspilot.northstar.process-assurance.v1") return;
-      if (cloud.status !== "ready" || !cloud.organizationId || !cloud.user) return;
+      if (!cloudReady || !organizationId || !user) return;
 
       const supabase = createClient() as any;
       if (!supabase) return;
@@ -67,9 +72,9 @@ export function ProcessAssuranceCloudBridge() {
           .from("process_assurance_audits")
           .upsert({
             record_id: payload.recordId,
-            organization_id: cloud.organizationId,
-            created_by: cloud.user.id,
-            organization_name: payload.setup.organization || cloud.organizationName,
+            organization_id: organizationId,
+            created_by: user.id,
+            organization_name: payload.setup.organization || organizationName,
             site: payload.setup.site,
             department: payload.setup.department,
             process_name: payload.setup.process,
@@ -93,10 +98,11 @@ export function ProcessAssuranceCloudBridge() {
           .single();
 
         if (auditError) throw auditError;
+        if (!audit?.id) throw new Error("Northstar did not return the Process Assurance record ID.");
 
         if (payload.findings.length > 0) {
           const findingRows = payload.findings.map((finding) => ({
-            organization_id: cloud.organizationId,
+            organization_id: organizationId,
             audit_id: audit.id,
             question_id: finding.id,
             category: finding.category,
@@ -109,7 +115,7 @@ export function ProcessAssuranceCloudBridge() {
             due_date: finding.dueDate,
             recommended_handoff: finding.recommendedHandoff,
             status: "open",
-            created_by: cloud.user.id,
+            created_by: user.id,
             updated_at: new Date().toISOString(),
           }));
           const { error: findingsError } = await supabase
