@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, Gauge, GraduationCap, HeartHandshake, PackageCheck, Truck, Wrench, X } from "lucide-react";
+import { BadgeDollarSign, BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, Gauge, GraduationCap, HeartHandshake, PackageCheck, Truck, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
@@ -74,8 +74,9 @@ export function NorthstarToolboxLauncher() {
                 {connectedCard("Measurement Assurance", "Control calibration, gage custody, intermediate verification, out-of-tolerance product impact, MSA, and human release authority.", "/tools/measurement-assurance", <Gauge size={21} />, "Open Measurement Assurance")}
                 {connectedCard("Customer Assurance", "Control customer accounts, complaints, containment, communication, RMA and warranty exposure, corrective action, and verified customer recovery.", "/tools/customer-assurance", <HeartHandshake size={21} />, "Open Customer Assurance")}
                 {connectedCard("Delivery Assurance", "Protect customer commitments with order readiness, production status, constraint recovery, financial exposure, and verified shipment release.", "/tools/delivery-assurance", <PackageCheck size={21} />, "Open Delivery Assurance")}
+                {connectedCard("Value Ledger", "Convert operational loss, recovery, savings, avoided cost, and protected revenue into financially validated executive intelligence and QMSPilot ROI.", "/tools/value-ledger", <BadgeDollarSign size={21} />, "Open Value Ledger")}
 
-                {["Commercial Intelligence & More"].map((title) => (
+                {["Enterprise Risk & More"].map((title) => (
                   <article key={title} style={{ padding: 20, border: "1px solid #d7e2ec", borderRadius: 18, background: "white", opacity: .78 }}>
                     <div style={{ display: "inline-flex", padding: "6px 9px", borderRadius: 999, color: "#6a7887", background: "#eef2f5", fontSize: 10, fontWeight: 850 }}>ROADMAP</div>
                     <h3 style={{ margin: "16px 0 8px", color: "#0e1b31", fontSize: 18 }}>{title}</h3>
