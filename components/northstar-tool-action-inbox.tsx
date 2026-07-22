@@ -59,8 +59,8 @@ export function NorthstarToolActionInbox() {
 
   useEffect(() => {
     if (!tool || cloud.status !== "ready" || !cloud.organizationId) return;
-    loadActions(false);
-    const timer = window.setInterval(() => loadActions(false), 30000);
+    void loadActions(false);
+    const timer = window.setInterval(() => void loadActions(false), 30000);
     return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tool, cloud.status, cloud.organizationId]);
@@ -69,9 +69,10 @@ export function NorthstarToolActionInbox() {
     if (!tool || !cloud.organizationId) return;
     const supabase = createClient();
     if (!supabase) return;
+    const db = supabase as any;
     setBusy("refresh");
-    const { data, error } = await supabase
-      .from("northstar_tool_actions" as never)
+    const { data, error } = await db
+      .from("northstar_tool_actions")
       .select("*")
       .eq("organization_id", cloud.organizationId)
       .eq("target_tool", tool)
@@ -79,10 +80,10 @@ export function NorthstarToolActionInbox() {
       .order("created_at", { ascending: false });
     setBusy("");
     if (error) {
-      if (showNotice) setNotice(error.message);
+      if (showNotice) setNotice(String(error.message || error));
       return;
     }
-    setActions((data || []) as unknown as ToolAction[]);
+    setActions((data || []) as ToolAction[]);
     if (showNotice) setNotice(`${data?.length || 0} closed-loop action${data?.length === 1 ? "" : "s"} synchronized.`);
   }
 
@@ -101,6 +102,7 @@ export function NorthstarToolActionInbox() {
 
     const supabase = createClient();
     if (!supabase || !cloud.organizationId || !cloud.user) return;
+    const db = supabase as any;
     setBusy(action.id);
     try {
       const files = fileMap.current.get(action.id) || [];
@@ -113,7 +115,7 @@ export function NorthstarToolActionInbox() {
           upsert: false,
         });
         if (uploadError) throw uploadError;
-        const { error: evidenceError } = await supabase.from("northstar_workforce_action_evidence" as never).insert({
+        const { error: evidenceError } = await db.from("northstar_workforce_action_evidence").insert({
           id: evidenceId,
           organization_id: cloud.organizationId,
           action_id: action.source_action_id,
@@ -122,7 +124,7 @@ export function NorthstarToolActionInbox() {
           mime_type: file.type || "application/octet-stream",
           size_bytes: file.size,
           uploaded_by: cloud.user.id,
-        } as never);
+        });
         if (evidenceError) throw evidenceError;
         evidenceNames.push(file.name);
       }
@@ -143,7 +145,7 @@ export function NorthstarToolActionInbox() {
             evidence_names: evidenceNames,
             updated_at: new Date().toISOString(),
           };
-      const { error } = await supabase.from("northstar_tool_actions" as never).update(patch as never).eq("id", action.id);
+      const { error } = await db.from("northstar_tool_actions").update(patch).eq("id", action.id);
       if (error) throw error;
       fileMap.current.delete(action.id);
       await loadActions(false);
@@ -161,7 +163,7 @@ export function NorthstarToolActionInbox() {
     <>
       <button
         type="button"
-        onClick={() => { setOpen(true); loadActions(false); }}
+        onClick={() => { setOpen(true); void loadActions(false); }}
         aria-label="Open Northstar closed-loop actions"
         style={{ position: "fixed", right: 22, bottom: 22, zIndex: 240, minHeight: 48, display: "inline-flex", alignItems: "center", gap: 9, padding: "0 16px", border: "1px solid #80b7e8", borderRadius: 999, color: "white", background: "linear-gradient(135deg,#071c34,#0a66ff)", boxShadow: "0 18px 46px rgba(5,48,91,.34)", fontSize: 12, fontWeight: 900, cursor: "pointer" }}
       >
@@ -174,7 +176,7 @@ export function NorthstarToolActionInbox() {
             <header style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", color: "white", background: "linear-gradient(135deg,#06172b,#0b4c86)" }}>
               <ShieldCheck size={22} />
               <div style={{ marginRight: "auto" }}><small style={{ display: "block", color: "#9cc8eb", letterSpacing: ".12em", fontWeight: 900 }}>NORTHSTAR CLOSED-LOOP EXECUTION</small><strong>{titleCase(tool)} action inbox</strong></div>
-              <button type="button" onClick={() => loadActions()} style={{ width: 38, height: 38, display: "grid", placeItems: "center", border: "1px solid #4a7193", borderRadius: 10, color: "white", background: "#0c2e4d", cursor: "pointer" }}><RefreshCw size={17} className={busy === "refresh" ? "spin" : ""} /></button>
+              <button type="button" onClick={() => void loadActions()} style={{ width: 38, height: 38, display: "grid", placeItems: "center", border: "1px solid #4a7193", borderRadius: 10, color: "white", background: "#0c2e4d", cursor: "pointer" }}><RefreshCw size={17} /></button>
               <button type="button" onClick={() => setOpen(false)} style={{ width: 38, height: 38, display: "grid", placeItems: "center", border: "1px solid #4a7193", borderRadius: 10, color: "white", background: "#0c2e4d", cursor: "pointer" }}><X size={18} /></button>
             </header>
 
@@ -196,9 +198,9 @@ export function NorthstarToolActionInbox() {
                     {!["done", "rejected"].includes(action.action_status) && (
                       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 13 }}>
                         <label style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 11px", border: "1px solid #c7d5e1", borderRadius: 9, color: "#3d607c", background: "#f8fbfd", fontSize: 10, fontWeight: 850, cursor: "pointer" }}><UploadCloud size={15} />Evidence<input type="file" multiple hidden onChange={(event) => fileMap.current.set(action.id, Array.from(event.target.files || []))} /></label>
-                        <button type="button" onClick={() => updateAction(action, "in_progress")} disabled={busy === action.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 11px", border: 0, borderRadius: 9, color: "white", background: "#1769c9", fontSize: 10, fontWeight: 850, cursor: "pointer" }}><Play size={14} />Start / update</button>
-                        <button type="button" onClick={() => updateAction(action, "blocked")} disabled={busy === action.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 11px", border: 0, borderRadius: 9, color: "white", background: "#9a6415", fontSize: 10, fontWeight: 850, cursor: "pointer" }}><AlertTriangle size={14} />Block</button>
-                        <button type="button" onClick={() => updateAction(action, "done")} disabled={busy === action.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 11px", border: 0, borderRadius: 9, color: "white", background: "#16835a", fontSize: 10, fontWeight: 850, cursor: "pointer" }}><CheckCircle2 size={14} />Verify & close</button>
+                        <button type="button" onClick={() => void updateAction(action, "in_progress")} disabled={busy === action.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 11px", border: 0, borderRadius: 9, color: "white", background: "#1769c9", fontSize: 10, fontWeight: 850, cursor: "pointer" }}><Play size={14} />Start / update</button>
+                        <button type="button" onClick={() => void updateAction(action, "blocked")} disabled={busy === action.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 11px", border: 0, borderRadius: 9, color: "white", background: "#9a6415", fontSize: 10, fontWeight: 850, cursor: "pointer" }}><AlertTriangle size={14} />Block</button>
+                        <button type="button" onClick={() => void updateAction(action, "done")} disabled={busy === action.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 11px", border: 0, borderRadius: 9, color: "white", background: "#16835a", fontSize: 10, fontWeight: 850, cursor: "pointer" }}><CheckCircle2 size={14} />Verify & close</button>
                       </div>
                     )}
                   </article>
