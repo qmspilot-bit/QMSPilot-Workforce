@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenCheck, Boxes, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, Wrench, X } from "lucide-react";
+import { BookOpenCheck, Boxes, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, Truck, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
@@ -69,8 +69,9 @@ export function NorthstarToolboxLauncher() {
                 {connectedCard("Workforce Readiness", "Control the skills matrix, qualification evidence, cross-training priorities, expiration risk, and critical-process coverage.", "/tools/workforce-readiness", <GraduationCap size={21} />, "Open Workforce Readiness")}
                 {connectedCard("Asset Reliability", "Control the asset register, preventive maintenance, work orders, downtime cost, evidence, and verified return to service.", "/tools/asset-reliability", <Wrench size={21} />, "Open Asset Reliability")}
                 {connectedCard("Controlled Change", "Control documents, impact assessments, approval routing, training readiness, revision release, and point-of-use verification.", "/tools/controlled-change", <BookOpenCheck size={21} />, "Open Controlled Change")}
+                {connectedCard("Supplier Assurance", "Qualify suppliers, control the approved supplier list, measure quality and delivery, manage incoming issues, and close SCARs with verified effectiveness.", "/tools/supplier-assurance", <Truck size={21} />, "Open Supplier Assurance")}
 
-                {["Calibration, Supplier Quality & More"].map((title) => (
+                {["Calibration & More"].map((title) => (
                   <article key={title} style={{ padding: 20, border: "1px solid #d7e2ec", borderRadius: 18, background: "white", opacity: .78 }}>
                     <div style={{ display: "inline-flex", padding: "6px 9px", borderRadius: 999, color: "#6a7887", background: "#eef2f5", fontSize: 10, fontWeight: 850 }}>ROADMAP</div>
                     <h3 style={{ margin: "16px 0 8px", color: "#0e1b31", fontSize: 18 }}>{title}</h3>
