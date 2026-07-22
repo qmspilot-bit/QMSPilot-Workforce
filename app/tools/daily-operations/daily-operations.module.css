@@ -1,0 +1,72 @@
+.scope :global(.sqdcp-grid) {
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)) !important;
+  align-items: start;
+}
+
+.scope :global(.category-card) {
+  min-width: 0;
+}
+
+.scope :global(.metric-row) {
+  grid-template-columns: 14px minmax(90px, 1fr) minmax(72px, 92px) minmax(72px, 92px) 58px 34px !important;
+  grid-template-areas:
+    "signal name name name name delete"
+    "signal target actual unit unit delete";
+  align-items: center !important;
+  row-gap: 8px !important;
+  padding: 12px !important;
+}
+
+.scope :global(.metric-row > .signal) {
+  grid-area: signal;
+  align-self: center;
+  margin: 0 !important;
+}
+
+.scope :global(.metric-row > input:not(.unit)) {
+  grid-area: name;
+  width: 100%;
+  min-width: 0;
+}
+
+.scope :global(.metric-row > label:first-of-type) {
+  grid-area: target;
+}
+
+.scope :global(.metric-row > label:nth-of-type(2)) {
+  grid-area: actual;
+}
+
+.scope :global(.metric-row > .unit) {
+  grid-area: unit;
+  width: 100% !important;
+  min-width: 0;
+}
+
+.scope :global(.metric-row > .icon-button) {
+  grid-area: delete;
+  align-self: center;
+}
+
+.scope :global(.metric-row label input) {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .scope :global(.sqdcp-grid) {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .scope :global(.sqdcp-grid) {
+    grid-template-columns: 1fr !important;
+  }
+
+  .scope :global(.metric-row) {
+    grid-template-columns: 12px minmax(62px, 1fr) minmax(62px, 1fr) 48px 34px !important;
+    grid-template-areas:
+      "signal name name name delete"
+      "signal target actual unit delete";
+  }
+}
