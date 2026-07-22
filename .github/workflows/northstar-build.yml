@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - agent/pilot-1-1-northstar
+    paths-ignore:
+      - deployment-diagnostics/**
   pull_request:
     branches:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -18,6 +20,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: agent/pilot-1-1-northstar
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -25,7 +29,39 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Type check
-        run: npm run typecheck
-      - name: Production build
-        run: npm run build
+      - name: Type check and production build
+        id: diagnostics
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck > /tmp/northstar-typecheck.log 2>&1
+          TYPE_STATUS=$?
+          npm run build > /tmp/northstar-build.log 2>&1
+          BUILD_STATUS=$?
+          {
+            echo "Commit: $GITHUB_SHA"
+            echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "Typecheck status: $TYPE_STATUS"
+            echo "Build status: $BUILD_STATUS"
+            echo
+            echo "===== TYPECHECK ====="
+            cat /tmp/northstar-typecheck.log
+            echo
+            echo "===== BUILD ====="
+            cat /tmp/northstar-build.log
+          } > /tmp/northstar-diagnostics.log
+          cat /tmp/northstar-diagnostics.log
+          echo "type_status=$TYPE_STATUS" >> "$GITHUB_OUTPUT"
+          echo "build_status=$BUILD_STATUS" >> "$GITHUB_OUTPUT"
+          if [ "$TYPE_STATUS" -ne 0 ] || [ "$BUILD_STATUS" -ne 0 ]; then exit 1; fi
+      - name: Commit failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          mkdir -p deployment-diagnostics
+          cp /tmp/northstar-diagnostics.log deployment-diagnostics/latest.log
+          git config user.name "Northstar Build Diagnostics"
+          git config user.email "actions@users.noreply.github.com"
+          git add deployment-diagnostics/latest.log
+          git commit -m "Record Northstar build failure diagnostics [skip ci]" || true
+          git push origin HEAD:agent/pilot-1-1-northstar
