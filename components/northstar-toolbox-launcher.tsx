@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenCheck, Boxes, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, Truck, Wrench, X } from "lucide-react";
+import { BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, Truck, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
@@ -70,6 +70,7 @@ export function NorthstarToolboxLauncher() {
                 {connectedCard("Asset Reliability", "Control the asset register, preventive maintenance, work orders, downtime cost, evidence, and verified return to service.", "/tools/asset-reliability", <Wrench size={21} />, "Open Asset Reliability")}
                 {connectedCard("Controlled Change", "Control documents, impact assessments, approval routing, training readiness, revision release, and point-of-use verification.", "/tools/controlled-change", <BookOpenCheck size={21} />, "Open Controlled Change")}
                 {connectedCard("Supplier Assurance", "Qualify suppliers, control the approved supplier list, measure quality and delivery, manage incoming issues, and close SCARs with verified effectiveness.", "/tools/supplier-assurance", <Truck size={21} />, "Open Supplier Assurance")}
+                {connectedCard("Daily Operations", "Run SQDCP, controlled shift handoffs, Tier 1 through Tier 3 meetings, cross-functional escalation, and verified daily actions.", "/tools/daily-operations", <CalendarClock size={21} />, "Open Daily Operations")}
 
                 {["Calibration & More"].map((title) => (
                   <article key={title} style={{ padding: 20, border: "1px solid #d7e2ec", borderRadius: 18, background: "white", opacity: .78 }}>
