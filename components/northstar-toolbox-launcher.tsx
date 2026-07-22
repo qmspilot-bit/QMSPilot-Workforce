@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeDollarSign, BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, Gauge, GraduationCap, HeartHandshake, PackageCheck, Truck, Wrench, X } from "lucide-react";
+import { BadgeDollarSign, BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, Gauge, GraduationCap, HeartHandshake, Network, PackageCheck, Truck, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
@@ -63,6 +63,7 @@ export function NorthstarToolboxLauncher() {
               </p>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
+                {connectedCard("AI Workforce Operations", "Operate the Intelligence Bus, review agent assignments, generate Pilot briefings, approve recommendations, track cross-tool actions, and govern writeback.", "/workforce-operations", <Network size={21} />, "Open Operations Center")}
                 {connectedCard("Corrective Action & CAPA", "Contain, investigate, assign accountable actions, verify effectiveness, and submit the controlled CAPA record to Northstar.", CAPA_URL, <Boxes size={21} />, "Open CAPA")}
                 {connectedCard("Nonconformance Report", "Capture nonconforming output, containment, disposition, evidence, COPQ, corrective actions, and submit the controlled NCR record to Northstar.", "/tools/ncr", <FileWarning size={21} />, "Open NCR")}
                 {connectedCard("Process Assurance", "Run layered process audits, verify standards at the point of work, assign containment, and submit operating intelligence to Northstar.", "/tools/process-assurance", <ClipboardCheck size={21} />, "Open Process Assurance")}
