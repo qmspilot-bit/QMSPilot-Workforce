@@ -1,6 +1,6 @@
 "use client";
 
-import { Boxes, ClipboardCheck, ExternalLink, FileWarning, X } from "lucide-react";
+import { Boxes, ClipboardCheck, ExternalLink, FileWarning, GraduationCap, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
@@ -61,7 +61,7 @@ export function NorthstarToolboxLauncher() {
 
       {open && (
         <div role="dialog" aria-modal="true" aria-label="Northstar Digital Toolbox" style={{ position: "fixed", inset: 0, zIndex: 500, display: "grid", placeItems: "center", padding: 18, background: "rgba(4,17,31,.82)", backdropFilter: "blur(10px)" }}>
-          <div style={{ width: "min(1120px,100%)", maxHeight: "92vh", overflow: "auto", border: "1px solid #365b7b", borderRadius: 22, background: "#f7fbff", boxShadow: "0 35px 100px rgba(0,0,0,.5)" }}>
+          <div style={{ width: "min(1220px,100%)", maxHeight: "92vh", overflow: "auto", border: "1px solid #365b7b", borderRadius: 22, background: "#f7fbff", boxShadow: "0 35px 100px rgba(0,0,0,.5)" }}>
             <header style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", color: "white", background: "linear-gradient(135deg,#071a31,#123f73)" }}>
               <Boxes size={22} />
               <div style={{ marginRight: "auto" }}>
@@ -73,7 +73,7 @@ export function NorthstarToolboxLauncher() {
 
             <div style={{ padding: 24 }}>
               <p style={{ margin: "0 0 20px", color: "#53677d", lineHeight: 1.6 }}>
-                Launch controlled quality applications directly from the Workforce. Northstar passes the user, tenant, site, permissions, and workflow context into each application.
+                Launch controlled quality and operations applications directly from the Workforce. Northstar carries company context, preserves human authority, and converts completed work into executive intelligence.
               </p>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
@@ -98,12 +98,19 @@ export function NorthstarToolboxLauncher() {
                   <ClipboardCheck size={21} />,
                   "Open Process Assurance",
                 )}
+                {connectedCard(
+                  "Workforce Readiness",
+                  "Control the skills matrix, qualification evidence, cross-training priorities, expiration risk, and critical-process coverage.",
+                  "/tools/workforce-readiness",
+                  <GraduationCap size={21} />,
+                  "Open Workforce Readiness",
+                )}
 
-                {["Training, Calibration & More"].map((title) => (
+                {["Calibration, Supplier Quality & More"].map((title) => (
                   <article key={title} style={{ padding: 20, border: "1px solid #d7e2ec", borderRadius: 18, background: "white", opacity: .78 }}>
                     <div style={{ display: "inline-flex", padding: "6px 9px", borderRadius: 999, color: "#6a7887", background: "#eef2f5", fontSize: 10, fontWeight: 850 }}>ROADMAP</div>
                     <h3 style={{ margin: "16px 0 8px", color: "#0e1b31", fontSize: 18 }}>{title}</h3>
-                    <p style={{ color: "#53677d", fontSize: 12, lineHeight: 1.55 }}>This Northstar production application will appear here as it becomes available.</p>
+                    <p style={{ color: "#53677d", fontSize: 12, lineHeight: 1.55 }}>Additional Northstar production applications will appear here as they become available.</p>
                   </article>
                 ))}
               </div>
