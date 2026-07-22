@@ -4,13 +4,12 @@ import "./globals.css";
 import { CloudWorkspaceProvider } from "@/components/cloud-workspace";
 import { NorthstarDashboardLauncher } from "@/components/northstar-dashboard-launcher";
 import { NorthstarToolboxLauncher } from "@/components/northstar-toolbox-launcher";
-import { NorthstarToolActionInbox } from "@/components/northstar-tool-action-inbox";
 import { NorthstarWorkforceLauncher } from "@/components/northstar-workforce-launcher";
 import { ProcessAssuranceCloudBridge } from "@/components/process-assurance-cloud-bridge";
 
 export const metadata: Metadata = {
   title: "Northstar | QMSPilot Workforce",
-  description: "QMSPilot Northstar mission control, AI workforce, digital toolbox, accountability dashboard, and closed-loop execution.",
+  description: "QMSPilot Northstar mission control, AI workforce, digital toolbox, and accountability dashboard.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
@@ -19,7 +18,6 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body>
         <CloudWorkspaceProvider>
           {children}
-          <NorthstarToolActionInbox />
           <NorthstarWorkforceLauncher />
           <NorthstarDashboardLauncher />
           <NorthstarToolboxLauncher />
