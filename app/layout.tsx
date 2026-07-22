@@ -4,6 +4,7 @@ import "./globals.css";
 import { CloudWorkspaceProvider } from "@/components/cloud-workspace";
 import { NorthstarDashboardLauncher } from "@/components/northstar-dashboard-launcher";
 import { NorthstarToolboxLauncher } from "@/components/northstar-toolbox-launcher";
+import { NorthstarWorkforceLauncher } from "@/components/northstar-workforce-launcher";
 import { ProcessAssuranceCloudBridge } from "@/components/process-assurance-cloud-bridge";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body>
         <CloudWorkspaceProvider>
           {children}
+          <NorthstarWorkforceLauncher />
           <NorthstarDashboardLauncher />
           <NorthstarToolboxLauncher />
           <ProcessAssuranceCloudBridge />
