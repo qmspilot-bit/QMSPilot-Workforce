@@ -1,13 +1,32 @@
 "use client";
 
 import { Boxes, ExternalLink, FileWarning, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = process.env.NEXT_PUBLIC_CAPA_APP_URL ||
   "https://qmspilot-bit.github.io/QMSPilot-Corrective-Action-CAPA-Northstar/";
 
 export function NorthstarToolboxLauncher() {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const openFromUrl = new URLSearchParams(window.location.search).get("toolbox") === "open";
+    if (openFromUrl) setOpen(true);
+
+    const openToolbox = () => setOpen(true);
+    window.addEventListener("qmspilot:open-toolbox", openToolbox);
+    return () => window.removeEventListener("qmspilot:open-toolbox", openToolbox);
+  }, []);
+
+  function closeToolbox() {
+    setOpen(false);
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("toolbox") === "open") {
+      url.searchParams.delete("toolbox");
+      const query = url.searchParams.toString();
+      window.history.replaceState({}, "", `${url.pathname}${query ? `?${query}` : ""}${url.hash}`);
+    }
+  }
 
   const connectedCard = (title: string, description: string, href: string, icon: ReactNode) => (
     <article style={{ padding: 20, border: "1px solid #9bc8f1", borderRadius: 18, background: "linear-gradient(160deg,#fff,#edf7ff)", boxShadow: "0 14px 30px rgba(25,107,181,.12)" }}>
@@ -49,7 +68,7 @@ export function NorthstarToolboxLauncher() {
                 <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "#9ec8ee" }}>QMSPilot Northstar</div>
                 <strong style={{ fontSize: 18 }}>Digital Toolbox</strong>
               </div>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close Digital Toolbox" style={{width:38,height:38,display:"grid",placeItems:"center",border:"1px solid #426587",borderRadius:10,color:"white",background:"#102d4d",cursor:"pointer"}}><X size={18}/></button>
+              <button type="button" onClick={closeToolbox} aria-label="Close Digital Toolbox" style={{width:38,height:38,display:"grid",placeItems:"center",border:"1px solid #426587",borderRadius:10,color:"white",background:"#102d4d",cursor:"pointer"}}><X size={18}/></button>
             </header>
 
             <div style={{ padding: 24 }}>
