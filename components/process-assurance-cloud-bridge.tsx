@@ -45,6 +45,40 @@ type ProcessAssurancePayload = {
 };
 
 type BridgeNotice = { tone: "success" | "error"; message: string } | null;
+type FindingRow = { id: string; question_id: string };
+
+const MAX_FILES_PER_FINDING = 8;
+const MAX_TOTAL_BYTES_PER_FINDING = 30 * 1024 * 1024;
+
+function safeStorageFileName(name: string) {
+  return name
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 140) || "evidence";
+}
+
+function evidenceMimeType(file: File) {
+  if (file.type) return file.type;
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  const types: Record<string, string> = {
+    pdf: "application/pdf",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    csv: "text/csv",
+    txt: "text/plain",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    webm: "video/webm",
+  };
+  return types[extension ?? ""] ?? "application/octet-stream";
+}
 
 export function ProcessAssuranceCloudBridge() {
   const cloud = useCloudWorkspace();
@@ -52,11 +86,81 @@ export function ProcessAssuranceCloudBridge() {
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
+    const evidenceFiles = new Map<string, File[]>();
 
     const organizationId = cloud.organizationId;
     const organizationName = cloud.organizationName;
     const user = cloud.user;
     const cloudReady = cloud.status === "ready" && Boolean(organizationId && user);
+
+    function captureEvidence(event: Event) {
+      const input = event.target instanceof HTMLInputElement ? event.target : null;
+      if (!input || input.type !== "file" || !input.closest(".evidence-upload")) return;
+      const question = input.closest(".question");
+      const label = question?.querySelector(".question-heading small")?.textContent ?? "";
+      const questionId = label.match(/PA-\d+/)?.[0];
+      if (!questionId) return;
+      evidenceFiles.set(questionId, Array.from(input.files ?? []));
+    }
+
+    async function uploadEvidence(
+      supabase: any,
+      auditId: string,
+      findingRows: FindingRow[],
+    ) {
+      const findingByQuestion = new Map(findingRows.map((finding) => [finding.question_id, finding.id]));
+      let uploadedCount = 0;
+
+      for (const [questionId, selectedFiles] of evidenceFiles.entries()) {
+        const findingId = findingByQuestion.get(questionId);
+        if (!findingId || selectedFiles.length === 0) continue;
+        if (selectedFiles.length > MAX_FILES_PER_FINDING) {
+          throw new Error(`${questionId} allows no more than ${MAX_FILES_PER_FINDING} evidence files.`);
+        }
+        const totalBytes = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+        if (totalBytes > MAX_TOTAL_BYTES_PER_FINDING) {
+          throw new Error(`${questionId} evidence must be 30 MB or smaller in total.`);
+        }
+
+        for (const file of selectedFiles) {
+          const evidenceId = crypto.randomUUID();
+          const mimeType = evidenceMimeType(file);
+          const storagePath = [
+            organizationId,
+            auditId,
+            findingId,
+            `${evidenceId}-${safeStorageFileName(file.name)}`,
+          ].join("/");
+
+          const { error: uploadError } = await supabase.storage
+            .from("process-assurance-evidence")
+            .upload(storagePath, file, {
+              contentType: mimeType,
+              cacheControl: "3600",
+              upsert: false,
+            });
+          if (uploadError) throw uploadError;
+
+          const { error: evidenceError } = await supabase
+            .from("process_assurance_evidence")
+            .insert({
+              id: evidenceId,
+              organization_id: organizationId,
+              audit_id: auditId,
+              finding_id: findingId,
+              file_name: file.name,
+              storage_path: storagePath,
+              mime_type: mimeType,
+              size_bytes: file.size,
+              uploaded_by: user?.id,
+            });
+          if (evidenceError) throw evidenceError;
+          uploadedCount += 1;
+        }
+      }
+
+      return uploadedCount;
+    }
 
     async function persist(event: Event) {
       const payload = (event as CustomEvent<ProcessAssurancePayload>).detail;
@@ -100,8 +204,9 @@ export function ProcessAssuranceCloudBridge() {
         if (auditError) throw auditError;
         if (!audit?.id) throw new Error("Northstar did not return the Process Assurance record ID.");
 
+        let findingRows: FindingRow[] = [];
         if (payload.findings.length > 0) {
-          const findingRows = payload.findings.map((finding) => ({
+          const rows = payload.findings.map((finding) => ({
             organization_id: organizationId,
             audit_id: audit.id,
             question_id: finding.id,
@@ -118,22 +223,30 @@ export function ProcessAssuranceCloudBridge() {
             created_by: user.id,
             updated_at: new Date().toISOString(),
           }));
-          const { error: findingsError } = await supabase
+          const { data, error: findingsError } = await supabase
             .from("process_assurance_findings")
-            .upsert(findingRows, { onConflict: "audit_id,question_id" });
+            .upsert(rows, { onConflict: "audit_id,question_id" })
+            .select("id, question_id");
           if (findingsError) throw findingsError;
+          findingRows = (data ?? []) as FindingRow[];
         }
 
+        const uploadedCount = await uploadEvidence(supabase, audit.id, findingRows);
         const syncedAt = new Date().toISOString();
         window.localStorage.setItem("qmspilot:process-assurance:last-cloud-sync", JSON.stringify({
           recordId: payload.recordId,
           auditId: audit.id,
           syncedAt,
+          uploadedEvidence: uploadedCount,
         }));
         window.dispatchEvent(new CustomEvent("qmspilot:northstar-submit-result", {
-          detail: { recordId: payload.recordId, auditId: audit.id, status: "cloud-saved", syncedAt },
+          detail: { recordId: payload.recordId, auditId: audit.id, status: "cloud-saved", syncedAt, uploadedEvidence: uploadedCount },
         }));
-        setNotice({ tone: "success", message: `${payload.recordId} is protected in the Northstar cloud workspace.` });
+        evidenceFiles.clear();
+        setNotice({
+          tone: "success",
+          message: `${payload.recordId} is protected in Northstar${uploadedCount ? ` with ${uploadedCount} evidence file${uploadedCount === 1 ? "" : "s"}` : ""}.`,
+        });
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : "Process Assurance could not sync to Secure cloud.";
         window.dispatchEvent(new CustomEvent("qmspilot:northstar-submit-result", {
@@ -146,8 +259,10 @@ export function ProcessAssuranceCloudBridge() {
       timeout = setTimeout(() => setNotice(null), 6500);
     }
 
+    document.addEventListener("change", captureEvidence, true);
     window.addEventListener("qmspilot:northstar-submit", persist);
     return () => {
+      document.removeEventListener("change", captureEvidence, true);
       window.removeEventListener("qmspilot:northstar-submit", persist);
       if (timeout) clearTimeout(timeout);
     };
