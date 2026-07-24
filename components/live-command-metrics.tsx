@@ -3,9 +3,11 @@
 import { Activity, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useCloudWorkspace } from "@/components/cloud-workspace";
+import { createClient } from "@/lib/supabase/client";
 
 type CommandEvent = {
   severity?: string;
+  event_status?: string;
   financial_exposure?: number | string | null;
   revenue_exposure?: number | string | null;
 };
@@ -25,7 +27,6 @@ type CommandPayload = {
   recommendations?: CommandRecommendation[];
   writebacks?: CommandWriteback[];
   value?: CommandValue;
-  error?: string;
 };
 
 function money(value: unknown) {
@@ -56,25 +57,67 @@ export function LiveCommandMetrics() {
   const [busy, setBusy] = useState(false);
 
   async function synchronize() {
-    const token = await cloud.getAccessToken();
-    if (!token) {
+    if (!cloud.organizationId || cloud.status !== "ready") {
       setNotice("Sign in to Northstar Secure to activate live executive metrics.");
       return;
     }
+
+    const supabase = createClient();
+    if (!supabase) {
+      setNotice("Northstar Secure is not configured in this deployment.");
+      return;
+    }
+
+    const db = supabase as any;
     setBusy(true);
     try {
-      const response = await fetch("/api/command-center", {
-        headers: { Authorization: `Bearer ${token}` },
+      const responses = await Promise.all([
+        db.from("northstar_intelligence_events")
+          .select("severity,event_status,financial_exposure,revenue_exposure")
+          .eq("organization_id", cloud.organizationId)
+          .order("source_submitted_at", { ascending: false })
+          .limit(100),
+        db.from("northstar_agent_recommendations")
+          .select("recommendation_status")
+          .eq("organization_id", cloud.organizationId)
+          .order("created_at", { ascending: false })
+          .limit(300),
+        db.from("northstar_workforce_actions")
+          .select("action_status")
+          .eq("organization_id", cloud.organizationId)
+          .order("created_at", { ascending: false })
+          .limit(300),
+        db.from("northstar_writeback_requests")
+          .select("writeback_status")
+          .eq("organization_id", cloud.organizationId)
+          .order("created_at", { ascending: false })
+          .limit(300),
+        db.from("value_ledger_snapshots")
+          .select("verified_realized_value,net_realized_value,qmspilot_roi")
+          .eq("organization_id", cloud.organizationId)
+          .order("submitted_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const failed = responses.find((response) => response.error);
+      if (failed?.error) throw failed.error;
+
+      const [eventResult, recommendationResult, actionResult, writebackResult, valueResult] = responses;
+      const activeEvents = ((eventResult.data || []) as CommandEvent[])
+        .filter((event) => !["closed", "dismissed"].includes(event.event_status || ""));
+
+      setPayload({
+        events: activeEvents,
+        recommendations: recommendationResult.data || [],
+        actions: actionResult.data || [],
+        writebacks: writebackResult.data || [],
+        value: valueResult.data || {},
       });
-      const result = await response.json() as CommandPayload;
-      if (!response.ok) throw new Error(result.error || "Command Center data could not be loaded.");
-      if (!result.events?.length) {
-        setNotice("Northstar Secure is connected. Submit a controlled tool record to create live executive intelligence.");
-        return;
-      }
-      setPayload(result);
       setMode("secure");
-      setNotice(`${result.events.length} live operating events synchronized from Northstar Secure.`);
+      setNotice(activeEvents.length
+        ? `${activeEvents.length} live operating events synchronized from Northstar Secure.`
+        : "Northstar Secure is connected. Submit a controlled tool record to create live executive intelligence.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Command Center synchronization failed.");
     } finally {
