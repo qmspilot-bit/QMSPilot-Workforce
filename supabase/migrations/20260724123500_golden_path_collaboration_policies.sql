@@ -1,0 +1,9 @@
+drop policy if exists northstar_validation_sessions_write on public.northstar_validation_sessions;
+create policy northstar_validation_sessions_insert on public.northstar_validation_sessions for insert to authenticated with check (created_by=(select auth.uid()) and (select private.has_org_role(organization_id,array['owner','admin','member']::public.organization_role[])));
+create policy northstar_validation_sessions_update on public.northstar_validation_sessions for update to authenticated using ((select private.has_org_role(organization_id,array['owner','admin','member']::public.organization_role[]))) with check ((select private.has_org_role(organization_id,array['owner','admin','member']::public.organization_role[])));
+create policy northstar_validation_sessions_delete on public.northstar_validation_sessions for delete to authenticated using ((select private.has_org_role(organization_id,array['owner','admin','member']::public.organization_role[])));
+
+drop policy if exists northstar_validation_findings_write on public.northstar_validation_findings;
+create policy northstar_validation_findings_insert on public.northstar_validation_findings for insert to authenticated with check (created_by=(select auth.uid()) and (select private.has_org_role(organization_id,array['owner','admin','member']::public.organization_role[])));
+create policy northstar_validation_findings_update on public.northstar_validation_findings for update to authenticated using ((select private.has_org_role(organization_id,array['owner','admin','member']::public.organization_role[]))) with check ((select private.has_org_role(organization_id,array['owner','admin','member']::public.organization_role[])));
+create policy northstar_validation_findings_delete on public.northstar_validation_findings for delete to authenticated using ((select private.has_org_role(organization_id,array['owner','admin','member']::public.organization_role[])));
