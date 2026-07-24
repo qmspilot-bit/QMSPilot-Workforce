@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeDollarSign, BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, Gauge, GraduationCap, HeartHandshake, Network, PackageCheck, Share2, Truck, Wrench, X } from "lucide-react";
+import { BadgeDollarSign, BookOpenCheck, Boxes, CalendarClock, ClipboardCheck, ExternalLink, FileWarning, FlaskConical, Gauge, GraduationCap, HeartHandshake, Network, PackageCheck, Share2, Truck, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 const CAPA_URL = "/tools/capa";
@@ -62,6 +62,7 @@ export function NorthstarToolboxLauncher() {
               </p>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
+                {connectedCard("Golden Path Validation", "Run the controlled customer-recovery demonstration, validate every closed-loop release gate, capture findings, preserve human signoffs, reset the demo, and print the design-partner report.", "/golden-path", <FlaskConical size={21} />, "Open Golden Path")}
                 {connectedCard("AI Workforce Operations", "Operate the Intelligence Bus, review agent assignments, generate Pilot briefings, approve recommendations, track cross-tool actions, and govern writeback.", "/workforce-operations", <Network size={21} />, "Open Operations Center")}
                 {connectedCard("Entity Graph", "Connect customers, orders, products, suppliers, assets, people, and controlled records into one source-event-traceable business context.", "/entity-graph", <Share2 size={21} />, "Open Entity Graph")}
                 {connectedCard("Corrective Action & CAPA", "Contain, investigate, assign accountable actions, verify effectiveness, submit to the Intelligence Bus, and receive approved closed-loop actions.", CAPA_URL, <Boxes size={21} />, "Open CAPA")}
