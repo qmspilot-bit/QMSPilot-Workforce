@@ -1,0 +1,46 @@
+name: Release Northstar to main
+
+on:
+  push:
+    branches:
+      - agent/pilot-1-1-northstar
+    paths:
+      - .github/workflows/release-northstar.yml
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Configure release identity
+        run: |
+          git config user.name "qmspilot-release-bot"
+          git config user.email "actions@users.noreply.github.com"
+
+      - name: Merge validated Northstar branch
+        run: |
+          git fetch origin agent/pilot-1-1-northstar
+          git merge --no-ff -X theirs origin/agent/pilot-1-1-northstar -m "Release Northstar Closed-Loop Execution Engine and Golden Path"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate production build
+        run: npm run build
+
+      - name: Publish release to main
+        run: git push origin main
