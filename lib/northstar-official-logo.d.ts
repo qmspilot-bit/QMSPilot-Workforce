@@ -1,0 +1,1 @@
+export const NORTHSTAR_OFFICIAL_LOGO_DATA_URI: string;
