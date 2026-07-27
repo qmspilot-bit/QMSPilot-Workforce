@@ -62,6 +62,7 @@ export function NorthstarToolboxLauncher() {
               </p>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
+                {connectedCard("Smart Warehouse", "Open the warehouse execution and visibility command center for receiving, inventory, production support, quarantine, shipping, safety, evidence, and AI insights.", "/smart-warehouse", <Boxes size={21} />, "Open Smart Warehouse")}
                 {connectedCard("Golden Path Validation", "Run the controlled customer-recovery demonstration, validate every closed-loop release gate, capture findings, preserve human signoffs, reset the demo, and print the design-partner report.", "/golden-path", <FlaskConical size={21} />, "Open Golden Path")}
                 {connectedCard("AI Workforce Operations", "Operate the Intelligence Bus, review agent assignments, generate Pilot briefings, approve recommendations, track cross-tool actions, and govern writeback.", "/workforce-operations", <Network size={21} />, "Open Operations Center")}
                 {connectedCard("Entity Graph", "Connect customers, orders, products, suppliers, assets, people, and controlled records into one source-event-traceable business context.", "/entity-graph", <Share2 size={21} />, "Open Entity Graph")}
