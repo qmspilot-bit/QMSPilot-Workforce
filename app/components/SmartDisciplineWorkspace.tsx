@@ -1,17 +1,509 @@
 "use client";
-import {useMemo,useRef,useState,type ChangeEvent} from "react";
-import {AlertTriangle,ArrowLeft,ArrowRight,BarChart3,Boxes,Camera,CheckCircle2,ClipboardCheck,FileText,Gauge,HardHat,PackageCheck,Search,Settings,ShieldCheck,Sparkles,Target,Trash2,Truck,Upload,Users,Wrench} from "lucide-react";
-import {NORTHSTAR_LOGO_DATA_URI,QMSPILOT_LOGO_DATA_URI} from "@/lib/northstar-brand-assets";
-type Tool={id:string;name:string;group:string;description:string;fields:string[];icon:any};type Config={slug:string;name:string;tag:string;description:string;health:number;metrics:string[][];insights:string[][];queues:string[][];tools:Tool[]};type Evidence={id:string;name:string;kind:string;size:number;url?:string};
-const T=(id:string,name:string,group:string,description:string,fields:string[],icon:any=ClipboardCheck):Tool=>({id,name,group,description,fields,icon});
-const F={ops:["Area / shift","Issue or activity","Current status","Risk / impact","Owner","Required action"],maint:["Asset ID","Work requirement","Priority","Condition / failure","Assigned owner","Completion verification"],safe:["Area / task","Hazard or activity","Risk level","Immediate control","Owner","Closure evidence"],supplier:["Supplier","Part / scope","Issue or review","Risk / impact","Owner","Status / action"],delivery:["Shipment / order","Customer","Requirement or issue","Current status","Owner","Release / recovery action"]};
-const configs:Record<string,Config>={
-operations:{slug:"smart-operations",name:"Smart Operations",tag:"PRODUCTION EXECUTION & VISIBILITY",description:"See production status, schedule risk, downtime, labor, bottlenecks, accountability, and escalation in one place.",health:86,metrics:[["Schedule attainment","91%","Target 95%"],["OEE","78.4%","-2.1%"],["Downtime","7","2 critical"],["Throughput","126","Today"],["Labor utilization","88%","3 gaps"],["Open actions","19","5 overdue"],["Quality holds","4","Blocking flow"],["On-time starts","93%","This shift"]],insights:[["Atlas","Two production cells are likely to miss schedule without sequence or labor adjustment.","High"],["Forge","Recurring Line 2 downtime is concentrated around the same changeover step.","High"],["Beacon","Five operational actions have no recent update.","Medium"],["Ledger","Current downtime represents an estimated $18,700 shift exposure.","Medium"]],queues:[["Shift handoff","8","3 need review"],["Production risks","11","4 high"],["Downtime events","7","2 critical"],["Escalations","6","2 overdue"],["Leadership actions","19","5 overdue"]],tools:[T("handoff","Shift Handoff","Daily Execution","Transfer status, risks, holds, staffing, and priorities between shifts.",F.ops,Users),T("production","Production Tracker","Production Control","Track work orders, quantities, constraints, and expected completion.",F.ops,BarChart3),T("downtime","Downtime Logger","Equipment & Flow","Capture downtime reason, duration, response, and production impact.",F.ops,AlertTriangle),T("andon","Andon / Escalation","Escalation","Raise visible production, quality, material, safety, or equipment support requests.",F.ops,Target),T("leader","Leader Standard Work","Leadership","Verify daily leadership routines, floor presence, reviews, and follow-up.",F.ops,ClipboardCheck),T("accountability","Daily Accountability","Leadership","Assign and track commitments, due dates, updates, and closure evidence.",F.ops,CheckCircle2),T("meeting","Production Meeting","Daily Execution","Document tier meeting metrics, decisions, escalations, and actions.",F.ops,Users),T("bottleneck","Bottleneck Review","Production Control","Identify constraints, quantify impact, and coordinate recovery.",F.ops,Gauge),T("labor","Labor & Skills Planner","Resources","Match staffing, qualifications, absences, and production demand.",F.ops,Users),T("changeover","Changeover Verification","Equipment & Flow","Control setup, tooling, first-piece checks, and release.",F.ops,Settings),T("visual","Visual Management Update","Leadership","Update performance boards, abnormalities, and countermeasures.",F.ops,BarChart3),T("resource","Resource Request","Resources","Request labor, tooling, engineering, material, or leadership support.",F.ops,PackageCheck)]},
-maintenance:{slug:"smart-maintenance",name:"Smart Maintenance",tag:"ASSET RELIABILITY & MAINTENANCE EXECUTION",description:"See equipment health, preventive maintenance, breakdowns, work orders, spare parts, inspections, and reliability risk in one place.",health:81,metrics:[["PM compliance","89%","7 overdue"],["Assets down","4","2 critical"],["MTBF","312h","+18h"],["MTTR","3.8h","Target 3h"],["Work orders","26","9 high"],["Critical spares","11","3 low"],["Downtime cost","$42.8K","This month"],["Inspections","94%","12 due"]],insights:[["Forge","Three failures share a lubrication-related symptom and warrant systemic review.","High"],["Atlas","Two critical assets have overdue PM work during elevated demand.","High"],["Beacon","Nine work orders have no scheduled completion date.","Medium"],["Ledger","Unplanned downtime created an estimated $42,800 monthly exposure.","Medium"]],queues:[["Emergency work","4","2 critical"],["PM due","18","7 overdue"],["Corrective work","26","9 high"],["Parts waiting","8","3 critical"],["Contractor actions","5","2 pending"]],tools:[T("workorder","Maintenance Work Order","Work Management","Create, prioritize, assign, execute, and verify maintenance work.",F.maint,Wrench),T("pm","Preventive Maintenance","Preventive Maintenance","Schedule and document required preventive maintenance tasks.",F.maint,ClipboardCheck),T("breakdown","Breakdown Report","Reliability","Capture failure, production impact, repair, and root-cause needs.",F.maint,AlertTriangle),T("history","Asset History","Asset Control","Maintain equipment identity, service history, changes, and condition.",F.maint,FileText),T("inspection","Equipment Inspection","Inspections","Perform condition, safety, function, guarding, and leak inspections.",F.maint,Gauge),T("lubrication","Lubrication Route","Preventive Maintenance","Control lubrication points, products, intervals, and exceptions.",F.maint,Settings),T("spares","Spare Parts Control","Parts & Materials","Track critical spares, levels, usage, reservations, and replenishment.",F.maint,Boxes),T("predictive","Predictive Maintenance Review","Reliability","Capture vibration, thermal, oil, acoustic, and trend findings.",F.maint,BarChart3),T("permit","Maintenance Safety Permit","Safety Control","Verify isolation, permits, hazards, controls, and authorization.",F.maint,ShieldCheck),T("contractor","Contractor Maintenance","Contractors","Control scope, qualification, permits, work evidence, and acceptance.",F.maint,Users),T("technical","Calibration / Technical Request","Technical Support","Route calibration, engineering, OEM, or specialist support.",F.maint,Target),T("rootcause","Reliability Root Cause","Reliability","Investigate repeat failures and verify corrective actions.",F.maint,FileText)]},
-safety:{slug:"smart-safety",name:"Smart Safety",tag:"SAFETY EXECUTION & RISK CONTROL",description:"See observations, hazards, incidents, PPE, training, inspections, permits, emergency readiness, and corrective action in one place.",health:90,metrics:[["Days without LTI","187","Current"],["Open hazards","12","3 high risk"],["Near misses","8","This month"],["Training current","96%","14 due"],["PPE compliance","94%","3 gaps"],["Safety actions","17","4 overdue"],["Inspections","92%","8 due"],["TRIR","0.78","Rolling 12m"]],insights:[["Sentinel","Three open hazards involve mobile equipment and pedestrians in the same area.","High"],["Beacon","Four corrective safety actions are overdue.","High"],["Atlas","Six respirator fit tests will expire within 30 days.","Medium"],["Forge","Grinding observations show inconsistent face-shield use.","Medium"]],queues:[["High-risk hazards","3","Immediate control"],["Incident review","2","1 pending"],["Safety actions","17","4 overdue"],["Training due","14","Within 30d"],["Inspections","8","This week"]],tools:[T("observation","Safety Observation","Observations","Capture safe behavior, at-risk behavior, conditions, coaching, and follow-up.",F.safe,HardHat),T("hazard","Hazard Report","Hazard Control","Identify hazards, assess risk, establish controls, and verify closure.",F.safe,AlertTriangle),T("incident","Incident Report","Incident Management","Document injuries, property events, evidence, and response.",F.safe,FileText),T("nearmiss","Near-Miss Report","Incident Management","Capture high-potential events before injury or loss occurs.",F.safe,Target),T("ppe","PPE Verification","PPE","Verify task-specific PPE selection, condition, use, and training.",F.safe,ShieldCheck),T("jha","JSA / JHA","Risk Assessment","Break work into steps, identify hazards, and assign controls.",F.safe,ClipboardCheck),T("audit","Safety Audit","Inspections","Perform structured safety, housekeeping, guarding, and compliance audits.",F.safe,CheckCircle2),T("forklift","Forklift Inspection","Mobile Equipment","Complete pre-use checks and remove unsafe equipment from service.",F.safe,Truck),T("permit","Permit to Work","Work Control","Control hot work, confined space, energized, and elevated work.",F.safe,FileText),T("emergency","Emergency Drill","Emergency Preparedness","Plan, execute, observe, and improve emergency response drills.",F.safe,AlertTriangle),T("training","Safety Training Verification","Training","Verify required training, competency, expiration, and retraining.",F.safe,Users),T("chemical","Chemical / SDS Control","Chemical Safety","Control chemical approvals, SDS access, labeling, storage, and PPE.",F.safe,FileText)]},
-supplier:{slug:"smart-supplier",name:"Smart Supplier",tag:"SUPPLIER PERFORMANCE & RISK CONTROL",description:"See supplier approval, quality, delivery, risk, audits, corrective actions, PPAP, scorecards, and development activity in one place.",health:83,metrics:[["Approved suppliers","126","8 conditional"],["Supplier PPM","1,240","Trending up"],["Open SCARs","9","3 overdue"],["On-time delivery","92%","Target 96%"],["High-risk suppliers","6","2 critical"],["Audits due","11","Next 60d"],["PPAP pending","7","3 blocking"],["Supplier COPQ","$74.2K","YTD"]],insights:[["Forge","One supplier accounts for 38% of incoming defects.","High"],["Atlas","Three pending PPAPs are on the critical path for launch.","High"],["Beacon","Two overdue SCARs lack purchasing escalation.","Medium"],["Ledger","Supplier issues created an estimated $74,200 YTD exposure.","Medium"]],queues:[["Incoming issues","13","5 high"],["SCAR responses","9","3 overdue"],["Approvals","8","2 conditional"],["PPAP reviews","7","3 blocking"],["Supplier audits","11","Within 60d"]],tools:[T("approval","Supplier Approval","Qualification","Evaluate capability, certifications, risk, and approval status.",F.supplier,ShieldCheck),T("risk","Supplier Risk Assessment","Risk","Assess quality, delivery, capacity, financial, and continuity risk.",F.supplier,Target),T("scorecard","Supplier Scorecard","Performance","Track quality, delivery, responsiveness, cost, and risk.",F.supplier,BarChart3),T("scar","Supplier Corrective Action","Corrective Action","Control containment, root cause, action, and effectiveness.",F.supplier,AlertTriangle),T("audit","Supplier Audit","Audits","Plan and execute supplier system and process audits.",F.supplier,ClipboardCheck),T("incoming","Incoming Supplier Issue","Quality","Document defects, receipts, containment, and disposition.",F.supplier,PackageCheck),T("ppap","PPAP / Product Approval","Product Approval","Control dimensional, material, capability, and approval evidence.",F.supplier,FileText),T("avl","Approved Vendor List","Qualification","Maintain approved, conditional, restricted, and disqualified status.",F.supplier,Users),T("change","Supplier Change Request","Change Control","Evaluate process, location, material, tooling, and sub-tier changes.",F.supplier,Settings),T("development","Supplier Development Plan","Development","Coordinate improvement priorities, milestones, and evidence.",F.supplier,Target),T("exception","Supplier Delivery Exception","Delivery","Capture shortages, late delivery, impact, and recovery.",F.supplier,Truck),T("review","Supplier Business Review","Performance","Document trends, decisions, escalation, and commitments.",F.supplier,Users)]},
-delivery:{slug:"smart-delivery",name:"Smart Delivery",tag:"SHIPPING EXECUTION & CUSTOMER RELEASE",description:"See shipment readiness, packaging, documentation, visual evidence, carrier performance, delivery exceptions, and customer release in one place.",health:88,metrics:[["On-time delivery","95.1%","Target 97%"],["Shipments ready","18","3 blocked"],["Document holds","4","2 urgent"],["Open exceptions","7","3 customer"],["Proof of delivery","96%","5 missing"],["Freight damage","3","This month"],["Carrier score","91%","Rolling 90d"],["Expedite cost","$18.6K","YTD"]],insights:[["Atlas","Three shipments are at risk due to incomplete customer documentation.","High"],["Sentinel","Two outbound loads have packaging evidence gaps.","High"],["Beacon","Five delivered shipments are missing proof of delivery.","Medium"],["Ledger","Expedites and exceptions represent $18,600 YTD cost.","Medium"]],queues:[["Ready to ship","18","3 blocked"],["Document review","9","4 holds"],["Customer release","6","2 urgent"],["Exceptions","7","3 customer"],["POD follow-up","5","Missing"]],tools:[T("verify","Shipment Verification","Shipping","Verify product, quantity, condition, packaging, labels, documents, and release.",F.delivery,PackageCheck),T("photos","Shipping Photos","Evidence","Capture load condition, packaging, labels, blocking, and evidence.",F.delivery,Camera),T("packaging","Packaging Verification","Packaging","Verify preservation, blocking, bracing, and labeling requirements.",F.delivery,Boxes),T("documents","Shipping Documentation","Documentation","Control packing lists, certificates, reports, and export documents.",F.delivery,FileText),T("release","Customer Release","Release","Verify quality, documentation, and shipment release conditions.",F.delivery,ShieldCheck),T("exception","Delivery Exception","Exceptions","Capture delay, misroute, shortage, and recovery communication.",F.delivery,AlertTriangle),T("damage","Freight Damage Report","Claims","Document damage, carrier condition, evidence, and claim activity.",F.delivery,Camera),T("carrier","Carrier Scorecard","Carriers","Track on-time performance, damage, responsiveness, claims, and cost.",F.delivery,BarChart3),T("pod","Proof of Delivery","Confirmation","Capture signed delivery evidence, recipient, condition, and exceptions.",F.delivery,CheckCircle2),T("export","Export Compliance Check","Documentation","Verify classification, destination, screening, and authorization.",F.delivery,ShieldCheck),T("appointment","Delivery Appointment","Scheduling","Control carrier appointment, dock window, and customer instructions.",F.delivery,Truck),T("return","Return Material Authorization","Returns","Control return authorization, receipt, condition, and disposition.",F.delivery,FileText)]}}
-const uid=()=>`${Date.now()}-${Math.random().toString(36).slice(2)}`;const bytes=(n:number)=>n<1024?`${n} B`:n<1048576?`${(n/1024).toFixed(1)} KB`:`${(n/1048576).toFixed(1)} MB`;
-export default function SmartDisciplineWorkspace({discipline}:{discipline:string}){const c=configs[discipline];const [selected,setSelected]=useState<Tool|null>(null),[query,setQuery]=useState(""),[group,setGroup]=useState("All");const groups=["All",...Array.from(new Set(c.tools.map(t=>t.group)))];const filtered=useMemo(()=>c.tools.filter(t=>(group==="All"||t.group===group)&&`${t.name} ${t.description}`.toLowerCase().includes(query.toLowerCase())),[c,query,group]);return <main className="sd"><aside><div className="logo"><img src={QMSPILOT_LOGO_DATA_URI} alt="QMSPilot"/></div><div className="north"><img src={NORTHSTAR_LOGO_DATA_URI} alt="Northstar"/></div><nav><a href="/">Command Center</a><a href="/workforce-operations">AI Workforce Operations</a><a href="/entity-graph">Entity Graph</a><a href="/dashboard">Accountability</a><a href="/toolbox">Digital Toolbox</a><a className="active" href={`/${c.slug}`}>{c.name}</a></nav><div className="status"><small>{c.name.toUpperCase()} STATUS</small><span>● Workspace online</span><span>● Evidence enabled</span><span>● Human approvals enforced</span><span>● Northstar writeback ready</span></div></aside><section className="main"><header><div><small>QMSPILOT NORTHSTAR</small><strong>{c.name}</strong></div><a href="/toolbox"><ArrowLeft size={15}/> Digital Toolbox</a><span>Intelligence online</span></header><div className="content">{selected?<Workspace c={c} tool={selected} onBack={()=>setSelected(null)}/>:<><section className="hero"><div><small>{c.tag}</small><h1>{c.description}</h1><p>One consistent Northstar workspace for frontline execution, evidence, ownership, supervised AI assistance, and leadership visibility.</p><div className="actions"><button onClick={()=>setSelected(c.tools[0])}>Start workflow <ArrowRight size={16}/></button><button className="outline" onClick={()=>document.getElementById("tools")?.scrollIntoView({behavior:"smooth"})}>Open tools <ClipboardCheck size={16}/></button></div></div><div className="health"><small>WORKSPACE HEALTH</small><div className="ring" style={{background:`conic-gradient(#0a66ff ${c.health*3.6}deg,#dce7ef 0)`}}><div><strong>{c.health}</strong><span>out of 100</span></div></div><b>Operational · attention required</b><em>Conditions need ownership</em></div></section><section className="metrics">{c.metrics.map(([a,b,d])=><article key={a}><small>{a}</small><strong>{b}</strong><span>{d}</span></article>)}</section><section className="two"><article className="panel"><div className="heading"><div><small>AI INSIGHTS</small><h2>What leadership needs to know now</h2></div><Sparkles/></div><div className="insights">{c.insights.map(([a,t,l])=><div key={t}><span>{a}</span><p>{t}</p><em className={l.toLowerCase()}>{l}</em></div>)}</div></article><article className="panel"><div className="heading"><div><small>EXECUTION FLOW</small><h2>Current queues</h2></div><BarChart3/></div><div className="queues">{c.queues.map(([a,b,d])=><div key={a}><span>{a}</span><strong>{b}</strong><em>{d}</em></div>)}</div></article></section><section id="tools" className="tool-section"><div className="section-head"><div><small>{c.name.toUpperCase()} TOOLBOX</small><h2>Embedded applications</h2></div><span>{filtered.length} tools available</span></div><div className="filters"><label><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search tools"/></label><select value={group} onChange={e=>setGroup(e.target.value)}>{groups.map(g=><option key={g}>{g}</option>)}</select></div><div className="tool-grid">{filtered.map(t=>{const I=t.icon;return <button className="tool" onClick={()=>setSelected(t)} key={t.id}><div><span><I size={22}/></span><em>{t.group}</em></div><h3>{t.name}</h3><p>{t.description}</p><b>Open tool <ArrowRight size={15}/></b></button>})}</div></section></>}</div></section><style>{styles}</style></main>}
-function Workspace({c,tool,onBack}:{c:Config;tool:Tool;onBack:()=>void}){const I=tool.icon,pr=useRef<HTMLInputElement>(null),dr=useRef<HTMLInputElement>(null);const [values,setValues]=useState<Record<string,string>>({}),[owner,setOwner]=useState(""),[priority,setPriority]=useState("Normal"),[checks,setChecks]=useState([false,false,false]),[evidence,setEvidence]=useState<Evidence[]>([]),[toast,setToast]=useState(""),[submitted,setSubmitted]=useState(false);const note=(m:string)=>{setToast(m);setTimeout(()=>setToast(""),3000)};const add=(kind:string,list:FileList|null)=>{if(!list?.length)return;setEvidence(v=>[...v,...Array.from(list).map(f=>({id:uid(),name:f.name,kind,size:f.size,url:f.type.startsWith("image/")?URL.createObjectURL(f):undefined}))]);note("Evidence attached")};const save=()=>{localStorage.setItem(`qmspilot-${c.slug}-${tool.id}`,JSON.stringify({values,owner,priority,checks,evidence:evidence.map(({url,...e})=>e)}));note("Draft saved")};const submit=()=>{if(!owner.trim())return note("Assign an owner before submission");if(!checks[0])return note("Complete required verification");localStorage.setItem(`qmspilot-${c.slug}-submission-${Date.now()}`,JSON.stringify({tool:tool.name,values,owner,priority,checks,status:"submitted"}));setSubmitted(true);note("Controlled record submitted to Northstar")};return <section className="workspace"><button className="back" onClick={onBack}><ArrowLeft size={16}/> Back to {c.name}</button><div className="workspace-head"><span><I size={28}/></span><div><small>{tool.group.toUpperCase()}</small><h1>{tool.name}</h1><p>{tool.description}</p></div><em>Northstar connected</em></div>{submitted&&<div className="success"><CheckCircle2/><div><strong>Submitted to Northstar</strong><span>Record, evidence, owner, priority, and status are available to the command layer.</span></div></div>}<div className="form-grid"><article className="panel form"><div className="heading"><div><small>CONTROLLED RECORD</small><h2>Complete the activity</h2></div><ClipboardCheck/></div>{tool.fields.map((f,i)=><label key={f}>{f}{i>3?<textarea value={values[f]||""} onChange={e=>setValues(v=>({...v,[f]:e.target.value}))}/>:<input value={values[f]||""} onChange={e=>setValues(v=>({...v,[f]:e.target.value}))}/>}</label>)}<label>Priority<select value={priority} onChange={e=>setPriority(e.target.value)}><option>Normal</option><option>High</option><option>Critical</option></select></label><label>Assigned owner<input value={owner} onChange={e=>setOwner(e.target.value)} placeholder="Select or enter owner"/></label></article><div className="side"><div className="mini"><div className="mini-title"><small>EVIDENCE</small><span>{evidence.length} captured</span></div><button onClick={()=>pr.current?.click()}><Camera size={17}/> Attach photos</button><button onClick={()=>dr.current?.click()}><Upload size={17}/> Attach documents</button><input hidden ref={pr} type="file" accept="image/*" multiple capture="environment" onChange={(e:ChangeEvent<HTMLInputElement>)=>add("photo",e.target.files)}/><input hidden ref={dr} type="file" multiple onChange={(e:ChangeEvent<HTMLInputElement>)=>add("document",e.target.files)}/>{evidence.map(e=><div className="evidence" key={e.id}>{e.url?<img src={e.url} alt="Evidence"/>:<FileText/>}<div><strong>{e.name}</strong><small>{bytes(e.size)}</small></div><button onClick={()=>setEvidence(v=>v.filter(x=>x.id!==e.id))}><Trash2 size={14}/></button></div>)}</div><div className="mini"><small>CONTROL</small>{["Required verification complete","Risk / immediate control addressed","Actions and closure criteria assigned"].map((l,i)=><label className="check" key={l}><input type="checkbox" checked={checks[i]} onChange={e=>setChecks(v=>v.map((x,j)=>j===i?e.target.checked:x))}/>{l}</label>)}</div><div className="mini ai"><Sparkles/><strong>AI Assistance</strong><p>Northstar can summarize evidence, identify patterns, and prepare actions. Qualified people retain approval and closure authority.</p></div></div></div><div className="footer"><button onClick={save}>Save draft</button><button onClick={()=>{note("Opening print-ready record");setTimeout(()=>window.print(),250)}}>Generate PDF</button><button onClick={()=>{setPriority("High");note("Action routing prepared")}}>Assign action</button><button className="primary" onClick={submit}>Submit to Northstar <ArrowRight size={16}/></button></div>{toast&&<div className="toast"><CheckCircle2 size={18}/>{toast}</div>}</section>}
-const styles=`*{box-sizing:border-box}body{margin:0;background:#edf3f8}.sd{min-height:100vh;color:#10263a;background:#edf3f8;font-family:Inter,Arial,sans-serif}.sd>aside{position:fixed;inset:0 auto 0 0;width:258px;padding:18px;background:linear-gradient(180deg,#061729,#0a2744);color:#fff;height:100vh;overflow:auto}.logo,.north{height:58px;display:flex;align-items:center;justify-content:center;padding:6px;border-radius:13px;background:#fff}.north{margin-top:8px;background:#020914}.logo img,.north img{max-width:190px;max-height:48px}nav{display:grid;gap:6px;margin-top:18px}nav a{padding:11px 12px;border-radius:10px;color:#bed2e4;text-decoration:none;font-size:12px;font-weight:850}nav a.active{color:#fff;background:#0d4a7c}.status{display:grid;gap:10px;margin-top:22px;padding-top:17px;border-top:1px solid #28475f;color:#c6d9e8;font-size:10px}.status small{color:#7fa9ca;font-weight:900}.main{margin-left:258px}.main>header{min-height:68px;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid #d7e3ec;background:#fff}.main>header>div{margin-right:auto}.main>header small,.main>header strong{display:block}.main>header small{font-size:9px;color:#6b8296}.main>header a{display:flex;align-items:center;gap:6px;color:#315f80;text-decoration:none;font-size:10px;font-weight:850}.main>header>span{padding:8px 11px;border-radius:999px;color:#176747;background:#e4f8ef;font-size:10px;font-weight:900}.content{max-width:1540px;margin:auto;padding:24px 24px 85px}.hero{display:grid;grid-template-columns:1.35fr .65fr;gap:18px}.hero>div:first-child{padding:30px;border-radius:24px;color:#fff;background:linear-gradient(135deg,#07192c,#0b477c 64%,#0a66ff)}.hero small,.heading small,.section-head small,.workspace-head small{color:#5baeff;font-size:9px;font-weight:900}.hero h1{margin:14px 0 12px;font-size:clamp(31px,4vw,52px);line-height:1.04}.hero p{color:#d6e8f6;line-height:1.6}.actions{display:flex;gap:9px;margin-top:20px}.actions button,.footer button,.mini>button,.back{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 13px;border:1px solid #c6d6e2;border-radius:10px;background:#fff;font-size:11px;font-weight:850;cursor:pointer}.actions .outline{color:#fff;background:transparent;border-color:#72afe1}.health{display:grid;place-items:center;align-content:center;padding:24px;border:1px solid #d8e4ed;border-radius:22px;background:#fff;text-align:center}.ring{width:170px;height:170px;display:grid;place-items:center;margin:16px;border-radius:50%}.ring>div{width:130px;height:130px;display:grid;place-items:center;align-content:center;border-radius:50%;background:#fff}.ring strong{font-size:48px}.ring span,.health em{font-size:9px;color:#71869a}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px}.metrics article,.panel,.tool{border:1px solid #dbe5ed;border-radius:17px;background:#fff;box-shadow:0 11px 28px rgba(24,53,77,.07)}.metrics article{padding:16px}.metrics small,.metrics strong,.metrics span{display:block}.metrics small{font-size:9px;color:#70869a}.metrics strong{margin-top:7px;font-size:27px}.metrics span{font-size:9px;color:#60788c}.two{display:grid;grid-template-columns:repeat(2,1fr);gap:17px;margin-top:17px}.panel{padding:19px}.heading,.section-head,.mini-title{display:flex;align-items:center;justify-content:space-between}.insights,.queues{display:grid;gap:9px;margin-top:15px}.insights>div{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:11px;border:1px solid #dce5ed;border-radius:12px}.insights span{color:#0a66ff;font-weight:900}.insights p{margin:0;font-size:11px}.insights em{padding:5px 7px;border-radius:999px;font-size:8px}.high{background:#ffe7ea;color:#8f1f2c}.medium{background:#fff0d5;color:#85520a}.queues>div{display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:12px;border-bottom:1px solid #e3ebf1}.queues em{font-size:10px;color:#71879a}.tool-section{margin-top:20px}.filters{display:flex;gap:10px;margin:14px 0}.filters label{flex:1;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid #cfdae4;border-radius:11px;background:#fff}.filters input{width:100%;min-height:42px;border:0;outline:0}.filters select{min-width:190px;border:1px solid #cfdae4;border-radius:11px;padding:0 10px}.tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:13px}.tool{min-height:210px;padding:17px;text-align:left;cursor:pointer}.tool>div{display:flex;justify-content:space-between}.tool>div span{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;color:#0a66ff;background:#e7f2ff}.tool em{font-size:9px}.tool p{font-size:11px;color:#5e768a;line-height:1.55}.tool b{display:flex;align-items:center;gap:6px;color:#0a66ff;font-size:10px}.workspace-head{display:flex;align-items:center;gap:14px;padding:20px;border-radius:18px;color:#fff;background:linear-gradient(135deg,#07192c,#0b477c)}.workspace-head>span{width:56px;height:56px;display:grid;place-items:center;border-radius:15px;background:#0a66ff}.workspace-head>div{flex:1}.workspace-head h1{margin:4px 0}.workspace-head p{margin:0;color:#d8e8f3}.workspace-head em{padding:7px 10px;border-radius:999px;background:#e4f8ef;color:#176747;font-size:9px}.success{display:flex;gap:10px;margin-top:14px;padding:14px;border:1px solid #a9dfc8;border-radius:13px;background:#e9faf2;color:#176747}.form-grid{display:grid;grid-template-columns:1.4fr .6fr;gap:16px;margin-top:16px}.form{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.form .heading{grid-column:1/-1}.form label{display:grid;gap:6px;font-size:10px;font-weight:850}.form input,.form textarea,.form select{width:100%;padding:11px;border:1px solid #ccd9e3;border-radius:9px}.form textarea{min-height:92px}.side{display:grid;gap:12px}.mini{padding:15px;border:1px solid #d7e3ec;border-radius:14px;background:#fff}.mini>button{width:100%;margin-top:8px}.check{display:flex!important;gap:8px;margin-top:12px;font-size:10px!important}.ai{background:#eef6ff}.ai strong{display:block;margin:8px 0}.ai p{font-size:10px;line-height:1.55}.evidence{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:8px;margin-top:8px;padding:8px;border:1px solid #dbe5ed;border-radius:10px}.evidence img{width:42px;height:42px;object-fit:cover}.evidence strong,.evidence small{display:block;font-size:8px}.evidence button{border:0;background:transparent}.footer{display:flex;justify-content:flex-end;gap:9px;margin-top:15px}.footer .primary{color:#fff;background:#0a66ff}.toast{position:fixed;right:24px;bottom:24px;padding:13px 16px;border-radius:12px;color:#fff;background:#102f49}@media(max-width:900px){.sd>aside{position:static;width:auto;height:auto}.main{margin-left:0}.hero,.two,.form-grid{grid-template-columns:1fr}.form{grid-template-columns:1fr}.filters{flex-direction:column}}@media print{.sd>aside,.main>header,.back,.footer,.mini button,.toast{display:none!important}.main{margin:0}.form-grid{grid-template-columns:1fr}}`;
+
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
+  Barcode,
+  BookOpenCheck,
+  Boxes,
+  Camera,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
+  FileCheck2,
+  FileSearch,
+  FileText,
+  Forklift,
+  Gauge,
+  GraduationCap,
+  HardHat,
+  History,
+  ListChecks,
+  MapPin,
+  Microscope,
+  PackageCheck,
+  PackageOpen,
+  PackageSearch,
+  Printer,
+  RefreshCw,
+  RotateCcw,
+  Save,
+  Scale,
+  ScanLine,
+  Search,
+  Send,
+  Settings,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  Trash2,
+  Truck,
+  Upload,
+  Users,
+  Warehouse,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { NORTHSTAR_LOGO_DATA_URI, QMSPILOT_LOGO_DATA_URI } from "@/lib/northstar-brand-assets";
+import {
+  smartWorkspaceConfigs,
+  type FieldDef,
+  type WorkflowTool,
+  type WorkspaceConfig,
+} from "@/lib/smart-workflow-config";
+
+type Evidence = { id: string; name: string; kind: "photo" | "document"; size: number; url?: string };
+type RecordMeta = { organization: string; site: string; recordId: string; eventDate: string };
+type SubmissionRecord = {
+  schema: string;
+  workspace: string;
+  toolId: string;
+  toolName: string;
+  recordMeta: RecordMeta;
+  procedure: WorkflowTool["procedure"];
+  values: Record<string, string>;
+  priority: string;
+  owner: string;
+  dueDate: string;
+  controls: Record<string, boolean>;
+  approval: { role: string; name: string; decision: string; conditions: string };
+  evidence: Omit<Evidence, "url">[];
+  status: string;
+  submittedAt: string;
+};
+
+const iconMap: Record<string, LucideIcon> = {
+  AlertTriangle, BarChart3, Barcode, BookOpenCheck, Boxes, Camera, CheckCircle2,
+  ClipboardCheck, Clock3, FileCheck2, FileSearch, FileText, Forklift, Gauge,
+  GraduationCap, HardHat, History, ListChecks, MapPin, Microscope, PackageCheck,
+  PackageOpen, PackageSearch, RefreshCw, Scale, ScanLine, Search, Settings,
+  ShieldAlert, ShieldCheck, Target, Truck, Users, Warehouse, Wrench,
+};
+
+const bytes = (value: number) => value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
+const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const today = () => new Date().toISOString().slice(0, 10);
+
+function makeRecordId(config: WorkspaceConfig, tool: WorkflowTool) {
+  const date = new Date();
+  const stamp = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
+  return `${config.discipline.slice(0, 3).toUpperCase()}-${tool.id.slice(0, 4).toUpperCase()}-${stamp}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
+function visible(field: FieldDef, values: Record<string, string>) {
+  if (!field.showWhen) return true;
+  const actual = values[field.showWhen.field] ?? "";
+  const expected = Array.isArray(field.showWhen.equals) ? field.showWhen.equals : [field.showWhen.equals];
+  return expected.includes(actual);
+}
+
+function otherSelected(value: string) {
+  return value === "Other / customer-defined" || value === "Other controlled work";
+}
+
+export default function SmartDisciplineWorkspace({ discipline }: { discipline: string }) {
+  const config = smartWorkspaceConfigs[discipline];
+  const [selected, setSelected] = useState<WorkflowTool | null>(null);
+  const [query, setQuery] = useState("");
+  const [group, setGroup] = useState("All");
+
+  if (!config) return <main style={{ padding: 40, fontFamily: "Arial" }}>Workspace configuration not found.</main>;
+
+  const groups = ["All", ...Array.from(new Set(config.tools.map((tool) => tool.group)))];
+  const filtered = config.tools.filter((tool) =>
+    (group === "All" || tool.group === group)
+    && `${tool.name} ${tool.description} ${tool.procedure.title}`.toLowerCase().includes(query.toLowerCase()),
+  );
+  const startTool = config.tools.find((tool) => tool.id === config.startToolId) ?? config.tools[0];
+
+  return (
+    <main className="smart-shell">
+      <aside className="smart-sidebar">
+        <div className="smart-logo"><img src={QMSPILOT_LOGO_DATA_URI} alt="QMSPilot" /></div>
+        <div className="smart-northstar"><img src={NORTHSTAR_LOGO_DATA_URI} alt="Northstar" /></div>
+        <nav>
+          <a href="/">Command Center</a>
+          <a href="/executive-intelligence">Executive Intelligence</a>
+          <a href="/workforce-operations">AI Workforce Operations</a>
+          <a href="/entity-graph">Entity Graph</a>
+          <a href="/dashboard">Accountability</a>
+          <a href="/toolbox">Workspaces</a>
+          <a className="active" href={`/${config.slug}`}>{config.name}</a>
+        </nav>
+        <div className="smart-status">
+          <small>{config.name.toUpperCase()} STATUS</small>
+          <span>● Guided workflows online</span>
+          <span>● Evidence capture enabled</span>
+          <span>● Approval gates enforced</span>
+          <span>● Customer configuration ready</span>
+        </div>
+      </aside>
+
+      <section className="smart-main">
+        <header className="smart-topbar">
+          <div><small>QMSPILOT NORTHSTAR</small><strong>{config.name}</strong></div>
+          <a href="/toolbox"><ArrowLeft size={15} /> Workspaces</a>
+          <span>Controlled workflow engine</span>
+        </header>
+
+        <div className="smart-content">
+          {selected ? (
+            <GuidedWorkflow key={selected.id} config={config} tool={selected} onBack={() => setSelected(null)} />
+          ) : (
+            <>
+              <section className="smart-hero">
+                <div>
+                  <small>{config.tag}</small>
+                  <h1>{config.description}</h1>
+                  <p>Each application now guides the user through controlled selections, conditional questions, evidence requirements, procedure references, accountable ownership, approvals, and verified closure. Customer-specific terminology and rules can be configured during onboarding.</p>
+                  <div className="smart-hero-actions">
+                    <button onClick={() => setSelected(startTool)}>Start {startTool.name} <ArrowRight size={16} /></button>
+                    <button className="outline" onClick={() => document.getElementById("smart-tools")?.scrollIntoView({ behavior: "smooth" })}>Browse guided workflows <ClipboardCheck size={16} /></button>
+                  </div>
+                </div>
+                <div className="smart-health">
+                  <small>{config.name.toUpperCase()} HEALTH</small>
+                  <div className="smart-ring"><div><strong>{config.health}</strong><span>out of 100</span></div></div>
+                  <b>{config.healthText}</b>
+                  <em>{config.attention}</em>
+                </div>
+              </section>
+
+              <section className="smart-metrics">
+                {config.metrics.map(([label, value, note]) => <article key={label}><small>{label}</small><strong>{value}</strong><span>{note}</span></article>)}
+              </section>
+
+              <section className="smart-two">
+                <article className="smart-panel">
+                  <div className="smart-heading"><div><small>AI OPERATIONAL INSIGHTS</small><h2>What leadership needs to know now</h2></div><Sparkles /></div>
+                  <div className="smart-insights">
+                    {config.insights.map(([agent, text, level]) => <div key={text}><span>{agent}</span><p>{text}</p><em className={level.toLowerCase()}>{level}</em></div>)}
+                  </div>
+                </article>
+                <article className="smart-panel">
+                  <div className="smart-heading"><div><small>EXECUTION FLOW</small><h2>Current controlled queues</h2></div><BarChart3 /></div>
+                  <div className="smart-queues">
+                    {config.queues.map(([label, value, note]) => <div key={label}><span>{label}</span><strong>{value}</strong><em>{note}</em></div>)}
+                  </div>
+                </article>
+              </section>
+
+              <section className="workflow-standard">
+                <div><ShieldCheck size={24} /><span><small>CONTROLLED WORKFLOW STANDARD</small><strong>Guided by procedure. Proven by evidence. Closed by authority.</strong></span></div>
+                <p>The baseline is ISO-aligned and built for disciplined manufacturing execution. It is not a claim that every organization uses identical procedures; company-specific values, approval roles, risk thresholds, numbering, retention, and escalation logic remain configurable.</p>
+              </section>
+
+              <section id="smart-tools" className="smart-tool-section">
+                <div className="smart-section-head"><div><small>{config.name.toUpperCase()} WORKFLOWS</small><h2>Guided operational applications</h2></div><span>{filtered.length} workflows available</span></div>
+                <div className="smart-filters">
+                  <label><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${config.name.toLowerCase()} workflows, procedures, or tasks`} /></label>
+                  <select value={group} onChange={(event) => setGroup(event.target.value)}>{groups.map((item) => <option key={item}>{item}</option>)}</select>
+                </div>
+                <div className="smart-tool-grid">
+                  {filtered.map((tool) => {
+                    const Icon = iconMap[tool.icon] ?? ClipboardCheck;
+                    return (
+                      <button className="smart-tool" onClick={() => setSelected(tool)} key={tool.id}>
+                        <div><span><Icon size={22} /></span><em>{tool.group}</em></div>
+                        <h3>{tool.name}</h3>
+                        <p>{tool.description}</p>
+                        <div className="tool-control-row"><small>{tool.procedure.id}</small><small>{tool.fields.filter((field) => field.required).length} required inputs</small><small>{tool.evidenceRequired ? "Evidence required" : "Evidence available"}</small></div>
+                        <b>Open guided workflow <ArrowRight size={15} /></b>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            </>
+          )}
+        </div>
+      </section>
+      <style>{styles}</style>
+    </main>
+  );
+}
+
+function GuidedWorkflow({ config, tool, onBack }: { config: WorkspaceConfig; tool: WorkflowTool; onBack: () => void }) {
+  const Icon = iconMap[tool.icon] ?? ClipboardCheck;
+  const photoRef = useRef<HTMLInputElement>(null);
+  const documentRef = useRef<HTMLInputElement>(null);
+  const initialValues = Object.fromEntries(tool.fields.map((field) => [field.key, ""]));
+  const [values, setValues] = useState<Record<string, string>>(initialValues);
+  const [recordMeta, setRecordMeta] = useState<RecordMeta>({ organization: "QMSPilot Design Partner", site: "Primary Site", recordId: makeRecordId(config, tool), eventDate: today() });
+  const [priority, setPriority] = useState("Normal");
+  const [owner, setOwner] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [controls, setControls] = useState<Record<string, boolean>>(Object.fromEntries(tool.controls.map((control) => [control, false])));
+  const [approvalRole, setApprovalRole] = useState(tool.approvalRoles[0] ?? "Authorized Approver");
+  const [approverName, setApproverName] = useState("");
+  const [approvalDecision, setApprovalDecision] = useState("");
+  const [approvalConditions, setApprovalConditions] = useState("");
+  const [evidence, setEvidence] = useState<Evidence[]>([]);
+  const [currentStage, setCurrentStage] = useState(0);
+  const [notice, setNotice] = useState("");
+  const [validationIssues, setValidationIssues] = useState<string[]>([]);
+  const [submitted, setSubmitted] = useState<SubmissionRecord | null>(null);
+  const draftKey = `qmspilot:guided:${config.discipline}:${tool.id}`;
+
+  const visibleFields = useMemo(() => tool.fields.filter((field) => visible(field, values)), [tool.fields, values]);
+  const sections = ["Record Context", "Evaluation", "Response & Action", "Closure"] as const;
+
+  const completion = useMemo(() => {
+    const requiredChecks = visibleFields.filter((field) => field.required).map((field) => Boolean(values[field.key]?.trim()));
+    const otherChecks = visibleFields.filter((field) => otherSelected(values[field.key] ?? "")).map((field) => Boolean(values[`${field.key}_other`]?.trim()));
+    const governance = [Boolean(recordMeta.organization.trim()), Boolean(recordMeta.site.trim()), Boolean(recordMeta.recordId.trim()), Boolean(recordMeta.eventDate), Boolean(owner.trim()), Boolean(dueDate), Boolean(approverName.trim()), Boolean(approvalDecision)];
+    const controlChecks = tool.controls.map((control) => Boolean(controls[control]));
+    const evidenceCheck = tool.evidenceRequired ? [evidence.length > 0] : [];
+    const all = [...requiredChecks, ...otherChecks, ...governance, ...controlChecks, ...evidenceCheck];
+    return all.length ? Math.round((all.filter(Boolean).length / all.length) * 100) : 0;
+  }, [visibleFields, values, recordMeta, owner, dueDate, approverName, approvalDecision, tool.controls, controls, tool.evidenceRequired, evidence.length]);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(draftKey);
+    if (!saved) return;
+    try {
+      const draft = JSON.parse(saved) as {
+        values?: Record<string, string>; recordMeta?: RecordMeta; priority?: string; owner?: string; dueDate?: string;
+        controls?: Record<string, boolean>; approvalRole?: string; approverName?: string; approvalDecision?: string;
+        approvalConditions?: string; evidence?: Omit<Evidence, "url">[];
+      };
+      if (draft.values) setValues({ ...initialValues, ...draft.values });
+      if (draft.recordMeta) setRecordMeta(draft.recordMeta);
+      if (draft.priority) setPriority(draft.priority);
+      if (draft.owner) setOwner(draft.owner);
+      if (draft.dueDate) setDueDate(draft.dueDate);
+      if (draft.controls) setControls(draft.controls);
+      if (draft.approvalRole) setApprovalRole(draft.approvalRole);
+      if (draft.approverName) setApproverName(draft.approverName);
+      if (draft.approvalDecision) setApprovalDecision(draft.approvalDecision);
+      if (draft.approvalConditions) setApprovalConditions(draft.approvalConditions);
+      if (draft.evidence) setEvidence(draft.evidence.map((item) => ({ ...item })));
+      setNotice("Saved draft restored. Attached file names were restored; reattach files before final submission if the browser session changed.");
+    } catch { window.localStorage.removeItem(draftKey); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const updateValue = (key: string, value: string) => {
+    setValues((current) => ({ ...current, [key]: value }));
+    setSubmitted(null);
+    setValidationIssues([]);
+  };
+
+  const addFiles = (kind: Evidence["kind"], files: FileList | null) => {
+    if (!files?.length) return;
+    const additions = Array.from(files).map((file) => ({
+      id: uid(), name: file.name, kind, size: file.size,
+      url: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+    }));
+    setEvidence((current) => [...current, ...additions]);
+    setNotice(`${additions.length} evidence file${additions.length === 1 ? "" : "s"} attached.`);
+  };
+
+  const saveDraft = () => {
+    const draft = { values, recordMeta, priority, owner, dueDate, controls, approvalRole, approverName, approvalDecision, approvalConditions, evidence: evidence.map(({ url: _url, ...item }) => item), savedAt: new Date().toISOString() };
+    window.localStorage.setItem(draftKey, JSON.stringify(draft));
+    setNotice("Guided workflow draft saved in this browser.");
+  };
+
+  const clearRecord = () => {
+    setValues(initialValues);
+    setRecordMeta({ organization: "QMSPilot Design Partner", site: "Primary Site", recordId: makeRecordId(config, tool), eventDate: today() });
+    setPriority("Normal"); setOwner(""); setDueDate("");
+    setControls(Object.fromEntries(tool.controls.map((control) => [control, false])));
+    setApprovalRole(tool.approvalRoles[0] ?? "Authorized Approver"); setApproverName(""); setApprovalDecision(""); setApprovalConditions("");
+    setEvidence([]); setValidationIssues([]); setSubmitted(null); window.localStorage.removeItem(draftKey); setNotice("New controlled record started.");
+  };
+
+  const validate = () => {
+    const issues: string[] = [];
+    if (!recordMeta.organization.trim()) issues.push("Organization");
+    if (!recordMeta.site.trim()) issues.push("Site");
+    if (!recordMeta.recordId.trim()) issues.push("Record ID");
+    if (!recordMeta.eventDate) issues.push("Event / record date");
+    visibleFields.filter((field) => field.required).forEach((field) => {
+      if (!values[field.key]?.trim()) issues.push(field.label);
+      if (otherSelected(values[field.key] ?? "") && !values[`${field.key}_other`]?.trim()) issues.push(`${field.label} - customer-defined detail`);
+    });
+    if (!owner.trim()) issues.push("Accountable owner");
+    if (!dueDate) issues.push("Due / review date");
+    tool.controls.forEach((control) => { if (!controls[control]) issues.push(control); });
+    if (tool.evidenceRequired && evidence.length === 0) issues.push("Required objective evidence");
+    if (!approverName.trim()) issues.push("Approver name");
+    if (!approvalDecision) issues.push("Approval decision");
+    if (approvalDecision === "Approved with conditions" && !approvalConditions.trim()) issues.push("Approval conditions");
+    setValidationIssues(issues);
+    return issues;
+  };
+
+  const buildRecord = (): SubmissionRecord => ({
+    schema: "qmspilot.northstar.guided-workflow.v2", workspace: config.name, toolId: tool.id, toolName: tool.name,
+    recordMeta, procedure: tool.procedure, values, priority, owner, dueDate, controls,
+    approval: { role: approvalRole, name: approverName, decision: approvalDecision, conditions: approvalConditions },
+    evidence: evidence.map(({ url: _url, ...item }) => item),
+    status: approvalDecision === "Approved" || approvalDecision === "Approved with conditions" ? "Submitted / approved" : "Submitted / returned",
+    submittedAt: new Date().toISOString(),
+  });
+
+  const submitToNorthstar = () => {
+    const issues = validate();
+    if (issues.length) { setNotice(`Submission blocked: ${issues.length} required item${issues.length === 1 ? " is" : "s are"} incomplete.`); return; }
+    const record = buildRecord();
+    const recordsKey = "qmspilot:northstar:guided-records";
+    const records = JSON.parse(window.localStorage.getItem(recordsKey) || "[]") as SubmissionRecord[];
+    window.localStorage.setItem(recordsKey, JSON.stringify([record, ...records].slice(0, 250)));
+    window.localStorage.removeItem(draftKey);
+    window.dispatchEvent(new CustomEvent("qmspilot:record-submitted", { detail: record }));
+    setSubmitted(record);
+    setNotice("Controlled record, approvals, evidence manifest, and audit context submitted to Northstar.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const assignAction = () => {
+    if (!owner.trim() || !dueDate) { setNotice("Enter an accountable owner and due date before assigning the action."); return; }
+    const action = { id: `ACT-${uid()}`, sourceRecord: recordMeta.recordId, sourceTool: tool.name, owner, dueDate, priority, status: "Open", createdAt: new Date().toISOString() };
+    const key = "qmspilot:northstar:assigned-actions";
+    const actions = JSON.parse(window.localStorage.getItem(key) || "[]") as unknown[];
+    window.localStorage.setItem(key, JSON.stringify([action, ...actions].slice(0, 250)));
+    window.dispatchEvent(new CustomEvent("qmspilot:action-assigned", { detail: action }));
+    setNotice(`Action assigned to ${owner} with a due date of ${dueDate}.`);
+  };
+
+  const guidance = useMemo(() => {
+    const messages: string[] = [];
+    if (completion < 35) messages.push("Start with record context and the requirement or expected condition before selecting a response.");
+    if (priority === "Critical") messages.push("Critical priority requires immediate leadership escalation and documented containment before routine processing continues.");
+    if (visibleFields.some((field) => field.key === "shipped" && values[field.key] === "Yes")) messages.push("Potential customer escape detected: complete the customer-impact evaluation and obtain authorized communication approval.");
+    if (tool.evidenceRequired && evidence.length === 0) messages.push("Objective evidence is required for this workflow. Attach photographs, records, measurements, or approval evidence before submission.");
+    if (approvalDecision === "Approved with conditions" && !approvalConditions.trim()) messages.push("Document the conditions, restrictions, or follow-up required by the approver.");
+    if (!messages.length) messages.push("The record is progressing correctly. Complete closure controls and authorized approval before submitting to Northstar.");
+    return messages.slice(0, 3);
+  }, [completion, priority, visibleFields, values, tool.evidenceRequired, evidence.length, approvalDecision, approvalConditions]);
+
+  return (
+    <section className="guided-workflow">
+      <button className="guided-back" onClick={onBack}><ArrowLeft size={16} /> Back to {config.name}</button>
+      <div className="guided-head">
+        <span><Icon size={29} /></span>
+        <div><small>{tool.group.toUpperCase()}</small><h1>{tool.name}</h1><p>{tool.description}</p></div>
+        <div className="completion"><strong>{completion}%</strong><small>record readiness</small><div><i style={{ width: `${completion}%` }} /></div></div>
+      </div>
+      {notice && <div className="guided-notice"><Sparkles size={17} /><span>{notice}</span></div>}
+      {submitted && <div className="guided-success"><CheckCircle2 size={24} /><div><strong>Submitted to Northstar</strong><span>{submitted.recordMeta.recordId} · {submitted.status} · {new Date(submitted.submittedAt).toLocaleString()}</span></div></div>}
+
+      <section className="procedure-banner">
+        <div><BookOpenCheck size={25} /><span><small>APPLICABLE CONTROLLED PROCEDURE</small><strong>{tool.procedure.id} · {tool.procedure.title}</strong><em>{tool.procedure.revision} · Owner: {tool.procedure.owner}</em></span></div>
+        <div className="standard-tags">{tool.procedure.standards.map((standard) => <span key={standard}>{standard}</span>)}</div>
+        <p>This is the QMSPilot baseline workflow. During customer onboarding, procedure ID, revision, terminology, options, approval authority, risk thresholds, and retention rules can be configured without changing the operating experience.</p>
+      </section>
+
+      <section className="stage-strip">
+        {tool.stages.map((stage, index) => <button className={index === currentStage ? "active" : index < currentStage ? "complete" : ""} onClick={() => setCurrentStage(index)} key={stage}><span>{index < currentStage ? "✓" : index + 1}</span><strong>{stage}</strong></button>)}
+      </section>
+
+      <div className="guided-layout">
+        <div className="guided-form-column">
+          <article className="guided-card control-card">
+            <div className="guided-title"><div><small>RECORD CONTROL</small><h2>Identity, context, and accountability</h2></div><FileText /></div>
+            <div className="record-grid">
+              <label>Organization *<input value={recordMeta.organization} onChange={(event) => setRecordMeta((current) => ({ ...current, organization: event.target.value }))} /></label>
+              <label>Site *<input value={recordMeta.site} onChange={(event) => setRecordMeta((current) => ({ ...current, site: event.target.value }))} /></label>
+              <label>Record ID *<input value={recordMeta.recordId} onChange={(event) => setRecordMeta((current) => ({ ...current, recordId: event.target.value }))} /></label>
+              <label>Event / record date *<input type="date" value={recordMeta.eventDate} onChange={(event) => setRecordMeta((current) => ({ ...current, eventDate: event.target.value }))} /></label>
+              <label>Priority / risk routing<select value={priority} onChange={(event) => setPriority(event.target.value)}><option>Normal</option><option>High</option><option>Critical</option></select></label>
+              <label>Accountable owner *<input value={owner} onChange={(event) => setOwner(event.target.value)} placeholder="Named person or accountable role" /></label>
+              <label>Due / review date *<input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label>
+            </div>
+          </article>
+
+          {sections.map((section) => {
+            const fields = visibleFields.filter((field) => field.section === section);
+            if (!fields.length) return null;
+            return (
+              <article className="guided-card" key={section}>
+                <div className="guided-title"><div><small>{section.toUpperCase()}</small><h2>{section === "Record Context" ? "Define the controlled activity" : section === "Evaluation" ? "Evaluate facts, requirements, and risk" : section === "Response & Action" ? "Control the response and assigned action" : "Verify results and closure conditions"}</h2></div><ClipboardCheck /></div>
+                <div className="field-grid">
+                  {fields.map((field) => <GuidedField key={field.key} field={field} value={values[field.key] ?? ""} otherValue={values[`${field.key}_other`] ?? ""} onChange={(value) => updateValue(field.key, value)} onOtherChange={(value) => updateValue(`${field.key}_other`, value)} />)}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <aside className="guided-side">
+          <article className="guided-card evidence-card">
+            <div className="guided-title"><div><small>OBJECTIVE EVIDENCE</small><h2>{evidence.length} file{evidence.length === 1 ? "" : "s"} attached</h2></div><Camera /></div>
+            <div className={`evidence-requirement ${tool.evidenceRequired ? "required" : "optional"}`}><strong>{tool.evidenceRequired ? "Required before submission" : "Available when needed"}</strong><span>Attach records that prove the condition, decision, action, verification, or approval.</span></div>
+            <div className="evidence-guidance">{tool.evidenceGuidance.map((item) => <span key={item}>• {item}</span>)}</div>
+            <div className="evidence-buttons">
+              <button onClick={() => photoRef.current?.click()}><Camera size={16} /> Attach photos</button>
+              <button onClick={() => documentRef.current?.click()}><Upload size={16} /> Attach documents</button>
+              <input hidden ref={photoRef} type="file" accept="image/*" multiple capture="environment" onChange={(event: ChangeEvent<HTMLInputElement>) => addFiles("photo", event.target.files)} />
+              <input hidden ref={documentRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.ppt,.pptx,image/*" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => addFiles("document", event.target.files)} />
+            </div>
+            {evidence.length > 0 && <div className="evidence-list">{evidence.map((item) => <div key={item.id}>{item.url ? <img src={item.url} alt="Evidence preview" /> : <span><FileText size={17} /></span>}<p><strong>{item.name}</strong><small>{item.kind.toUpperCase()} · {bytes(item.size)}</small></p><button onClick={() => setEvidence((current) => current.filter((entry) => entry.id !== item.id))}><Trash2 size={14} /></button></div>)}</div>}
+          </article>
+
+          <article className="guided-card gate-card">
+            <div className="guided-title"><div><small>CLOSURE GATES</small><h2>Required process controls</h2></div><ShieldCheck /></div>
+            {tool.controls.map((control) => <label key={control}><input type="checkbox" checked={Boolean(controls[control])} onChange={(event) => setControls((current) => ({ ...current, [control]: event.target.checked }))} /><span>{control}</span></label>)}
+          </article>
+
+          <article className="guided-card approval-card">
+            <div className="guided-title"><div><small>HUMAN AUTHORITY</small><h2>Approval and closure decision</h2></div><Users /></div>
+            <label>Approval role *<select value={approvalRole} onChange={(event) => setApprovalRole(event.target.value)}>{tool.approvalRoles.map((role) => <option key={role}>{role}</option>)}</select></label>
+            <label>Approver name *<input value={approverName} onChange={(event) => setApproverName(event.target.value)} placeholder="Named authorized person" /></label>
+            <label>Decision *<select value={approvalDecision} onChange={(event) => setApprovalDecision(event.target.value)}><option value="">Select decision</option><option>Approved</option><option>Approved with conditions</option><option>Rejected</option><option>Returned for revision</option></select></label>
+            {(approvalDecision === "Approved with conditions" || approvalDecision === "Returned for revision" || approvalDecision === "Rejected") && <label>Conditions / reason *<textarea value={approvalConditions} onChange={(event) => setApprovalConditions(event.target.value)} placeholder="Document restrictions, conditions, rejection reason, or required revision" /></label>}
+          </article>
+
+          <article className="guided-card ai-card">
+            <div className="guided-title"><div><small>PILOT GUIDANCE</small><h2>Workflow coaching</h2></div><Sparkles /></div>
+            {guidance.map((message) => <p key={message}>{message}</p>)}
+            <small>AI guidance supports the process. Qualified humans retain authority for disposition, release, customer commitments, regulatory decisions, and closure.</small>
+          </article>
+
+          <article className="guided-card escalation-card">
+            <div className="guided-title"><div><small>ESCALATION LOGIC</small><h2>Conditions that require routing</h2></div><AlertTriangle /></div>
+            {tool.escalations.map((rule) => <div key={rule.when}><strong>{rule.when}</strong><span>{rule.route}</span></div>)}
+          </article>
+        </aside>
+      </div>
+
+      {validationIssues.length > 0 && <section className="validation-box"><AlertTriangle size={20} /><div><strong>Submission is blocked until the required controls are complete.</strong><p>{validationIssues.slice(0, 8).join(" · ")}{validationIssues.length > 8 ? ` · +${validationIssues.length - 8} more` : ""}</p></div></section>}
+
+      <div className="guided-actions">
+        <button className="secondary" onClick={saveDraft}><Save size={16} /> Save draft</button>
+        <button className="secondary" onClick={() => window.print()}><Printer size={16} /> Generate PDF / Print</button>
+        <button className="secondary" onClick={assignAction}><Target size={16} /> Assign action</button>
+        <button className="secondary danger" onClick={clearRecord}><RotateCcw size={16} /> New record</button>
+        <button className="primary" onClick={submitToNorthstar}><Send size={16} /> Submit to Northstar</button>
+      </div>
+    </section>
+  );
+}
+
+function GuidedField({ field, value, otherValue, onChange, onOtherChange }: { field: FieldDef; value: string; otherValue: string; onChange: (value: string) => void; onOtherChange: (value: string) => void }) {
+  const required = field.required ? " *" : "";
+  return (
+    <label className={field.type === "textarea" ? "wide" : ""}>
+      <span>{field.label}{required}</span>
+      {field.type === "select" ? (
+        <select value={value} onChange={(event) => onChange(event.target.value)}><option value="">Select an option</option>{field.options?.map((option) => <option key={option}>{option}</option>)}</select>
+      ) : field.type === "textarea" ? (
+        <textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder={field.placeholder ?? `Enter ${field.label.toLowerCase()}`} />
+      ) : (
+        <input type={field.type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={field.placeholder ?? (field.type === "date" ? undefined : `Enter ${field.label.toLowerCase()}`)} />
+      )}
+      {field.help && <small>{field.help}</small>}
+      {otherSelected(value) && <textarea className="other-detail" value={otherValue} onChange={(event) => onOtherChange(event.target.value)} placeholder="Enter the customer-defined value and any required explanation *" />}
+    </label>
+  );
+}
+
+const styles = `
+*{box-sizing:border-box}body{margin:0;background:#edf3f8}.smart-shell{min-height:100vh;color:#10263a;background:#edf3f8;font-family:Inter,Arial,sans-serif}.smart-sidebar{position:fixed;inset:0 auto 0 0;width:258px;height:100vh;overflow:auto;padding:18px;color:#fff;background:linear-gradient(180deg,#061729,#0a2744)}.smart-logo,.smart-northstar{height:58px;display:flex;align-items:center;justify-content:center;padding:6px;border-radius:13px;background:#fff}.smart-northstar{margin-top:8px;background:#020914}.smart-logo img,.smart-northstar img{max-width:190px;max-height:48px}.smart-sidebar nav{display:grid;gap:6px;margin-top:18px}.smart-sidebar nav a{padding:11px 12px;border-radius:10px;color:#bed2e4;text-decoration:none;font-size:12px;font-weight:850}.smart-sidebar nav a.active{color:#fff;background:#0d4a7c}.smart-status{display:grid;gap:10px;margin-top:22px;padding-top:17px;border-top:1px solid #28475f;color:#c6d9e8;font-size:10px}.smart-status small{color:#7fa9ca;letter-spacing:.12em;font-weight:900}.smart-main{margin-left:258px}.smart-topbar{min-height:68px;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid #d7e3ec;background:#fff}.smart-topbar>div{margin-right:auto}.smart-topbar small,.smart-topbar strong{display:block}.smart-topbar small{color:#6b8296;font-size:9px;font-weight:900;letter-spacing:.12em}.smart-topbar a{display:flex;align-items:center;gap:6px;color:#315f80;text-decoration:none;font-size:10px;font-weight:850}.smart-topbar>span{padding:8px 11px;border-radius:999px;color:#176747;background:#e4f8ef;font-size:10px;font-weight:900}.smart-content{max-width:1540px;margin:0 auto;padding:24px 24px 80px}.smart-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:18px}.smart-hero>div:first-child{padding:30px;border-radius:24px;color:#fff;background:linear-gradient(135deg,#07192c,#0b477c 64%,#0a66ff);box-shadow:0 24px 60px rgba(8,47,82,.22)}.smart-hero small,.smart-heading small,.smart-section-head small,.guided-title small,.guided-head small,.procedure-banner small{color:#5baeff;font-size:9px;font-weight:900;letter-spacing:.12em}.smart-hero h1{max-width:950px;margin:14px 0 12px;font-size:clamp(31px,4vw,54px);line-height:1.03}.smart-hero p{max-width:960px;margin:0;color:#d6e8f6;line-height:1.65}.smart-hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:21px}.smart-hero-actions button,.guided-back,.guided-actions button,.evidence-buttons button{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 13px;border:1px solid #c6d6e2;border-radius:10px;color:#09223b;background:#fff;font-size:11px;font-weight:850;cursor:pointer}.smart-hero-actions .outline{border-color:#72afe1;color:#fff;background:transparent}.smart-health{display:grid;place-items:center;align-content:center;padding:24px;border:1px solid #d8e4ed;border-radius:22px;background:#fff;text-align:center}.smart-health>small{color:#71879a}.smart-ring{width:170px;height:170px;display:grid;place-items:center;margin:16px 0;border-radius:50%;background:conic-gradient(#0a66ff 313deg,#dce7ef 0)}.smart-ring>div{width:130px;height:130px;display:grid;place-items:center;align-content:center;border-radius:50%;background:#fff}.smart-ring strong,.smart-ring span{display:block}.smart-ring strong{font-size:48px;line-height:1}.smart-ring span{color:#74899b;font-size:10px}.smart-health b{color:#176747}.smart-health em{margin-top:5px;color:#71869a;font-size:9px;font-style:normal}.smart-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-top:16px}.smart-metrics article,.smart-panel,.smart-tool,.guided-card{border:1px solid #dbe5ed;border-radius:17px;background:#fff;box-shadow:0 11px 28px rgba(24,53,77,.07)}.smart-metrics article{padding:16px}.smart-metrics small,.smart-metrics strong,.smart-metrics span{display:block}.smart-metrics small{color:#70869a;font-size:9px;font-weight:900;text-transform:uppercase}.smart-metrics strong{margin-top:7px;font-size:27px}.smart-metrics span{margin-top:4px;color:#60788c;font-size:9px}.smart-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:17px;margin-top:17px}.smart-panel{padding:19px}.smart-heading,.smart-section-head,.guided-title{display:flex;align-items:center;justify-content:space-between;gap:10px}.smart-heading h2,.smart-section-head h2,.guided-title h2{margin:5px 0 0}.smart-insights,.smart-queues{display:grid;gap:9px;margin-top:15px}.smart-insights>div{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:11px;border:1px solid #dce5ed;border-radius:12px}.smart-insights span{font-weight:900;color:#0a66ff}.smart-insights p{margin:0;font-size:11px;line-height:1.5}.smart-insights em{padding:5px 7px;border-radius:999px;font-size:8px;font-weight:900;font-style:normal}.smart-insights .high{color:#8f1f2c;background:#ffe7ea}.smart-insights .medium{color:#85520a;background:#fff0d5}.smart-queues>div{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:11px;border-bottom:1px solid #e3ebf1}.smart-queues strong{font-size:18px}.smart-queues em{grid-column:1/3;color:#71879a;font-size:9px;font-style:normal}.workflow-standard{display:grid;grid-template-columns:auto 1fr;gap:15px;align-items:center;margin-top:18px;padding:18px;border:1px solid #9dc9ed;border-radius:17px;background:linear-gradient(135deg,#eaf5ff,#fff)}.workflow-standard>div{display:flex;align-items:center;gap:11px}.workflow-standard span small,.workflow-standard span strong{display:block}.workflow-standard span small{color:#0a66ff;font-size:8px;font-weight:900;letter-spacing:.12em}.workflow-standard p{margin:0;color:#557086;font-size:10px;line-height:1.6}.smart-section-head{align-items:end;margin:25px 0 12px}.smart-section-head>span{color:#61798d;font-size:10px}.smart-filters{display:grid;grid-template-columns:1fr 250px;gap:10px;margin-bottom:13px}.smart-filters label{display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid #ccdce8;border-radius:11px;background:#fff}.smart-filters input,.smart-filters select{width:100%;min-height:44px;border:0;outline:0;background:transparent}.smart-filters>select{padding:0 11px;border:1px solid #ccdce8;border-radius:11px;background:#fff}.smart-tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:14px}.smart-tool{min-height:310px;display:flex;flex-direction:column;padding:18px;text-align:left;cursor:pointer}.smart-tool:hover{transform:translateY(-2px);border-color:#8fc3ed}.smart-tool>div:first-child{display:flex;align-items:center;justify-content:space-between}.smart-tool>div:first-child span{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;color:#0a66ff;background:#e8f3ff}.smart-tool em{color:#60788c;font-size:9px;font-style:normal;font-weight:900;text-transform:uppercase}.smart-tool h3{margin:16px 0 7px}.smart-tool p{margin:0;color:#60788c;font-size:11px;line-height:1.58}.tool-control-row{display:flex!important;flex-wrap:wrap!important;justify-content:flex-start!important;gap:6px;margin-top:14px}.tool-control-row small{padding:5px 7px;border-radius:999px;color:#315f80;background:#edf5fb;font-size:8px;font-weight:850}.smart-tool b{display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:17px;color:#0a66ff;font-size:10px}.guided-back{margin-bottom:12px;color:#315f80}.guided-head{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:23px;border-radius:20px;color:#fff;background:linear-gradient(135deg,#07192c,#0b477c 64%,#0a66ff)}.guided-head>span{width:58px;height:58px;display:grid;place-items:center;border-radius:16px;background:rgba(255,255,255,.13)}.guided-head h1{margin:5px 0;font-size:31px}.guided-head p{margin:0;color:#d8e9f6;font-size:11px;line-height:1.55}.completion{min-width:150px;text-align:right}.completion strong,.completion small{display:block}.completion strong{font-size:31px}.completion small{color:#b9d9ee}.completion>div{height:7px;margin-top:8px;border-radius:999px;background:rgba(255,255,255,.25);overflow:hidden}.completion i{display:block;height:100%;border-radius:999px;background:#fff}.guided-notice,.guided-success{display:flex;align-items:center;gap:10px;margin-top:12px;padding:12px 14px;border-radius:12px}.guided-notice{color:#174d78;background:#e9f5ff;border:1px solid #9cc7e9;font-size:11px;font-weight:800}.guided-success{color:#176747;background:#e4f8ef;border:1px solid #9ccfb9}.guided-success strong,.guided-success span{display:block}.guided-success span{margin-top:3px;font-size:9px}.procedure-banner{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-top:14px;padding:18px;border:1px solid #c8ddea;border-radius:17px;background:#fff}.procedure-banner>div:first-child{display:flex;align-items:center;gap:11px}.procedure-banner span strong,.procedure-banner span em,.procedure-banner span small{display:block}.procedure-banner span em{margin-top:3px;color:#6c8396;font-size:9px;font-style:normal}.standard-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.standard-tags span{padding:6px 8px;border-radius:999px;color:#315f80;background:#edf5fb;font-size:8px;font-weight:850}.procedure-banner>p{grid-column:1/3;margin:0;padding-top:11px;border-top:1px solid #e4ebf1;color:#5a7286;font-size:10px;line-height:1.55}.stage-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px;margin-top:13px}.stage-strip button{display:flex;align-items:center;gap:8px;min-height:48px;padding:8px;border:1px solid #d4e1ea;border-radius:11px;color:#577087;background:#fff;text-align:left;cursor:pointer}.stage-strip button span{width:26px;height:26px;display:grid;place-items:center;flex:0 0 auto;border-radius:8px;background:#edf3f7;font-size:9px;font-weight:950}.stage-strip button strong{font-size:9px}.stage-strip button.active{border-color:#0a66ff;color:#0a5cac;background:#edf6ff}.stage-strip button.active span,.stage-strip button.complete span{color:#fff;background:#0a66ff}.guided-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(310px,.65fr);gap:15px;margin-top:15px}.guided-form-column,.guided-side{display:grid;align-content:start;gap:14px}.guided-card{padding:18px}.guided-title{margin-bottom:14px}.guided-title svg{color:#0a66ff}.record-grid,.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.record-grid label,.field-grid label,.approval-card label{display:grid;gap:6px;color:#425e73;font-size:9px;font-weight:900}.field-grid label.wide{grid-column:1/3}.record-grid input,.record-grid select,.field-grid input,.field-grid select,.field-grid textarea,.approval-card input,.approval-card select,.approval-card textarea{width:100%;min-height:43px;padding:10px 11px;border:1px solid #cbdbe7;border-radius:10px;color:#10263a;background:#fbfdff;font:inherit;font-size:11px;font-weight:500;outline:none}.field-grid textarea,.approval-card textarea{min-height:92px;resize:vertical}.field-grid label>small{color:#7890a2;font-size:8px;font-weight:600;line-height:1.4}.other-detail{margin-top:5px;border-color:#f0bd65!important;background:#fffaf0!important}.evidence-requirement{display:grid;gap:4px;padding:11px;border-radius:11px}.evidence-requirement.required{color:#8a3e18;background:#fff0e4}.evidence-requirement.optional{color:#176747;background:#e6f7ef}.evidence-requirement span{font-size:9px;line-height:1.4}.evidence-guidance{display:grid;gap:5px;margin:11px 0;color:#5e768a;font-size:9px}.evidence-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}.evidence-buttons button{justify-content:center;color:#174d78;background:#eef7ff}.evidence-list{display:grid;gap:7px;margin-top:10px}.evidence-list>div{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:8px;border:1px solid #dce6ed;border-radius:10px}.evidence-list img,.evidence-list>div>span{width:39px;height:39px;display:grid;place-items:center;border-radius:8px;object-fit:cover;background:#edf3f7}.evidence-list p{min-width:0;margin:0}.evidence-list strong,.evidence-list small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.evidence-list strong{font-size:9px}.evidence-list small{margin-top:3px;color:#71869a;font-size:7px}.evidence-list button{border:0;color:#9b3440;background:transparent;cursor:pointer}.gate-card>label{display:flex;align-items:flex-start;gap:9px;padding:10px 0;border-bottom:1px solid #e8eef3;color:#405d73;font-size:10px;line-height:1.45}.gate-card input{margin-top:2px}.approval-card{display:grid;gap:10px}.approval-card .guided-title{margin-bottom:4px}.ai-card{color:#174d78;background:linear-gradient(145deg,#e9f5ff,#fff)}.ai-card p{margin:7px 0;padding-left:10px;border-left:3px solid #0a66ff;font-size:10px;line-height:1.5}.ai-card>small{display:block;margin-top:10px;color:#688197;font-size:8px;line-height:1.5}.escalation-card>div:not(.guided-title){display:grid;gap:4px;padding:10px 0;border-bottom:1px solid #e8eef3}.escalation-card strong{font-size:9px}.escalation-card span{color:#647c90;font-size:8px;line-height:1.4}.validation-box{display:flex;gap:11px;margin-top:14px;padding:15px;border:1px solid #e7a6ad;border-radius:13px;color:#8e2734;background:#fff0f2}.validation-box p{margin:5px 0 0;font-size:9px;line-height:1.5}.guided-actions{position:sticky;bottom:0;z-index:10;display:flex;gap:8px;flex-wrap:wrap;margin-top:15px;padding:13px;border:1px solid #cedde8;border-radius:14px;background:rgba(255,255,255,.96);box-shadow:0 -10px 30px rgba(22,52,76,.1);backdrop-filter:blur(8px)}.guided-actions button.secondary{color:#315f80}.guided-actions button.danger{color:#94323e}.guided-actions button.primary{margin-left:auto;border-color:#0a66ff;color:#fff;background:linear-gradient(135deg,#0d315c,#1f67c8)}@media(max-width:1000px){.guided-layout{grid-template-columns:1fr}.guided-side{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:820px){.smart-sidebar{position:static;width:auto;height:auto}.smart-main{margin-left:0}.smart-hero{grid-template-columns:1fr}.smart-two{grid-template-columns:1fr}.smart-filters{grid-template-columns:1fr}.guided-head{grid-template-columns:auto 1fr}.completion{grid-column:1/3;text-align:left}.procedure-banner{grid-template-columns:1fr}.procedure-banner>p{grid-column:1}.standard-tags{justify-content:flex-start}.record-grid,.field-grid{grid-template-columns:1fr}.field-grid label.wide{grid-column:1}.guided-side{grid-template-columns:1fr}.guided-actions{position:static}.guided-actions button.primary{margin-left:0}}@media print{.smart-sidebar,.smart-topbar,.guided-back,.guided-actions,.evidence-buttons{display:none!important}.smart-main{margin-left:0}.smart-content{padding:0}.guided-layout{grid-template-columns:1fr}.guided-card,.procedure-banner,.guided-head{box-shadow:none;break-inside:avoid}}
+`;
