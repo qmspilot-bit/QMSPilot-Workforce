@@ -1,0 +1,167 @@
+import { smartWorkspaceConfigs } from "@/lib/smart-workflow-config";
+import { F, RISK, RESULT, YES_NO, YES_NO_NA, escalation, procedure, specializeWorkspace, type ToolProfiles } from "@/lib/smart-specialization-helpers";
+
+const profiles: ToolProfiles = {
+  workorder: {
+    procedure: procedure("MT-07.01", "Maintenance Work Order Planning and Execution", "Maintenance", ["ISO 9001:2015 7.1.3", "ISO 9001:2015 8.5.1"]),
+    stages: ["Request", "Screen", "Prioritize", "Plan", "Make safe", "Execute", "Test", "Return to service"],
+    fields: [
+      F("asset", "Asset / equipment ID", "text", "Record Context", true), F("location", "Area / work center", "text", "Record Context", true), F("requester", "Requester", "text", "Record Context", true), F("request_date", "Request date / time", "datetime-local", "Record Context", true),
+      F("work_type", "Work type", "select", "Evaluation", true, ["Emergency breakdown", "Corrective", "Preventive", "Predictive / condition-based", "Improvement", "Inspection finding", "Technical support"]), F("condition", "Observed condition / requested work", "textarea", "Evaluation", true), F("priority", "Maintenance priority", "select", "Evaluation", true, ["P1 - emergency / safety / production stopped", "P2 - urgent / degraded", "P3 - planned corrective", "P4 - improvement / routine"]), F("production_impact", "Production / quality / safety impact", "select", "Evaluation", true, RISK),
+      F("planning_status", "Planning status", "select", "Evaluation", true, ["Ready to execute", "Needs troubleshooting", "Awaiting parts", "Awaiting labor / contractor", "Awaiting outage", "Engineering review"]), F("job_plan", "Job steps / technical plan", "textarea", "Response & Action", true), F("labor_hours", "Planned labor hours", "number", "Response & Action"), F("parts_materials", "Parts, materials, tools, and special equipment", "textarea", "Response & Action"), F("loto", "LOTO / permit required?", "select", "Response & Action", true, YES_NO_NA), F("permit_reference", "LOTO / permit reference", "text", "Response & Action", undefined, undefined, undefined, { field: "loto", equals: "Yes" }),
+      F("work_start", "Work start", "datetime-local", "Response & Action"), F("work_end", "Work complete", "datetime-local", "Closure"), F("work_performed", "Work performed and condition found", "textarea", "Closure", true), F("parts_used", "Parts actually used", "textarea", "Closure"), F("test_result", "Functional / safety / quality test result", "textarea", "Closure", true), F("final_status", "Asset status", "select", "Closure", true, ["Returned to service", "Restricted operation", "Temporary repair", "Awaiting parts / follow-up", "Out of service"]), F("follow_up", "Follow-up work / RCA / PM change", "textarea", "Closure"),
+    ],
+    controls: ["Priority and impact are correctly classified", "Job plan, parts, labor, and safety controls are ready", "Work performed and parts used are documented", "Functional test and return-to-service authorization are complete"],
+    approvalRoles: ["Maintenance Planner", "Qualified Technician", "Maintenance Supervisor", "Operations Owner", "EHS / Technical Authority"], evidenceRequired: true,
+    evidenceGuidance: ["Before-condition photographs", "LOTO / permit evidence", "Repair and parts evidence", "Functional test and return-to-service evidence"],
+    escalations: [escalation("P1 emergency, safety risk, or production stop", "Maintenance and Operations leadership immediately"), escalation("Temporary repair or repeat failure", "Reliability review and planned permanent action")],
+  },
+  pm: {
+    procedure: procedure("MT-07.02", "Preventive Maintenance Control", "Maintenance", ["ISO 9001:2015 7.1.3"]),
+    stages: ["Schedule", "Verify due scope", "Make safe", "Perform tasks", "Record findings", "Correct exceptions", "Release", "Set next due"],
+    fields: [
+      F("asset", "Asset / equipment ID", "text", "Record Context", true), F("pm_id", "PM plan / route ID", "text", "Record Context", true), F("location", "Area / work center", "text", "Record Context", true), F("due_date", "PM due date", "date", "Evaluation", true), F("frequency", "Frequency / trigger", "select", "Evaluation", true, ["Calendar", "Run hours", "Cycles", "Condition trigger", "Shutdown / outage", "Seasonal"]), F("meter_reading", "Current meter / cycle reading", "number", "Evaluation"),
+      F("task_revision", "PM task-list revision", "text", "Evaluation", true), F("tasks_required", "Tasks required", "number", "Evaluation", true), F("tasks_completed", "Tasks completed", "number", "Evaluation", true), F("findings", "Measurements, wear, contamination, leaks, looseness, and abnormalities", "textarea", "Evaluation", true), F("condition", "Asset condition after PM", "select", "Evaluation", true, ["Acceptable", "Monitor", "Corrective work required", "Unsafe / out of service"]),
+      F("corrective_work", "Corrective work order / immediate action", "textarea", "Response & Action", undefined, undefined, undefined, { field: "condition", equals: ["Corrective work required", "Unsafe / out of service"] }), F("parts_lubricants", "Parts, filters, lubricants, and consumables used", "textarea", "Response & Action"), F("test", "Post-PM functional test", "textarea", "Closure", true), F("release", "Return-to-service status", "select", "Closure", true, ["Released", "Released with monitoring", "Restricted", "Out of service"]), F("next_due", "Next due date / meter", "text", "Closure", true), F("pm_change", "PM frequency / task change recommended?", "select", "Closure", true, YES_NO),
+    ],
+    controls: ["Current PM task list and due basis are verified", "All required tasks and readings are accounted for", "Abnormal findings generate controlled follow-up", "Post-maintenance test, release, and next due are documented"],
+    approvalRoles: ["Qualified Technician", "Maintenance Planner", "Maintenance Supervisor", "Operations Owner"], evidenceRequired: true,
+    evidenceGuidance: ["Task checklist and readings", "Condition photographs", "Parts / lubricant evidence", "Functional test and next-due confirmation"],
+    escalations: [escalation("PM uncovers unsafe or critical degradation", "Remove from service and notify leadership"), escalation("PM is overdue on a critical asset", "Maintenance / Operations priority review")],
+  },
+  breakdown: {
+    procedure: procedure("MT-07.03", "Breakdown Response and Restoration", "Maintenance / Operations", ["ISO 9001:2015 7.1.3", "ISO 9001:2015 10.2"]),
+    stages: ["Respond", "Make safe", "Diagnose", "Restore", "Test", "Record loss", "Trigger RCA"],
+    fields: [
+      F("asset", "Failed asset / line", "text", "Record Context", true), F("location", "Area / work center", "text", "Record Context", true), F("failure_start", "Failure start", "datetime-local", "Record Context", true), F("response_time", "Technician response", "datetime-local", "Evaluation"), F("restored_time", "Production restored", "datetime-local", "Closure"),
+      F("symptom", "Failure symptom / operator report", "textarea", "Evaluation", true), F("failure_mode", "Failure mode / component", "text", "Evaluation", true), F("impact", "Impact level", "select", "Evaluation", true, RISK), F("affected_order", "Affected work order / product", "text", "Evaluation"), F("safety_quality", "Safety / product impact", "select", "Evaluation", true, ["None", "Potential safety impact", "Potential product impact", "Confirmed product impact", "Emergency / stop work"]),
+      F("diagnosis", "Diagnosis and troubleshooting evidence", "textarea", "Response & Action", true), F("repair", "Repair / restoration action", "textarea", "Response & Action", true), F("parts", "Failed and replacement parts", "textarea", "Response & Action"), F("temporary", "Temporary repair?", "select", "Response & Action", true, YES_NO), F("permanent_due", "Permanent repair due", "date", "Response & Action", undefined, undefined, undefined, { field: "temporary", equals: "Yes" }),
+      F("test", "Functional / load test", "textarea", "Closure", true), F("repeat", "Repeat failure in review period?", "select", "Closure", true, YES_NO), F("rca", "RCA / reliability follow-up", "text", "Closure", undefined, undefined, undefined, { field: "repeat", equals: "Yes" }), F("status", "Final status", "select", "Closure", true, ["Fully restored", "Restricted / monitor", "Temporary repair", "Out of service"]),
+    ],
+    controls: ["Failure timing, symptom, impact, and asset are captured", "Safety and product risk are controlled", "Repair and test prove restoration", "Temporary or repeat failures trigger permanent action / RCA"],
+    approvalRoles: ["Qualified Technician", "Maintenance Supervisor", "Operations Supervisor", "Reliability Engineer", "EHS / Quality Authority"], evidenceRequired: true,
+    evidenceGuidance: ["Failure-condition photographs / video", "Troubleshooting readings", "Repair and failed-part evidence", "Functional test / production restoration"],
+    escalations: [escalation("Critical asset, emergency, or customer commitment impact", "Plant leadership and production control"), escalation("Repeat failure or temporary repair", "Reliability RCA and permanent corrective action")],
+  },
+  history: {
+    procedure: procedure("MT-07.04", "Asset Master Data and Maintenance History", "Maintenance / Engineering", ["ISO 9001:2015 7.1.3", "ISO 9001:2015 7.5"]),
+    stages: ["Identify asset", "Verify master data", "Record event", "Update configuration", "Assess condition", "Set next action"],
+    fields: [
+      F("asset", "Asset ID", "text", "Record Context", true), F("description", "Asset description / manufacturer / model", "textarea", "Record Context", true), F("serial", "Serial number", "text", "Record Context"), F("location", "Current location / process", "text", "Record Context", true), F("criticality", "Asset criticality", "select", "Evaluation", true, ["A - production / safety critical", "B - significant", "C - support / low impact"]),
+      F("event_type", "History event", "select", "Evaluation", true, ["Installation / commissioning", "PM", "Corrective repair", "Breakdown", "Inspection", "Modification", "Relocation", "Decommission"]), F("event_date", "Event date", "date", "Evaluation", true), F("work_order", "Work order / document reference", "text", "Evaluation", true), F("event_summary", "Work, findings, configuration, and condition", "textarea", "Evaluation", true), F("runtime_meter", "Runtime / cycle reading", "number", "Evaluation"),
+      F("configuration_change", "Configuration / software / tooling change", "textarea", "Response & Action"), F("condition", "Current condition", "select", "Closure", true, ["Good", "Monitor", "Degraded", "Restricted", "Out of service", "Decommissioned"]), F("next_action", "Next maintenance / engineering action", "textarea", "Closure", true), F("next_due", "Next due / review date", "date", "Closure"),
+    ],
+    controls: ["Asset identity and location are verified", "Event is traceable to work order / evidence", "Configuration changes update controlled master data", "Condition and next action are visible"],
+    approvalRoles: ["Maintenance Planner", "Reliability Engineer", "Engineering Authority", "Asset Owner"], evidenceRequired: false,
+    evidenceGuidance: ["Nameplate / asset photographs", "Work order and service report", "Configuration documents", "Condition trend / next action"],
+    escalations: [escalation("Critical asset master data or history is incomplete", "Maintenance / Engineering data correction"), escalation("Unapproved configuration change is found", "Controlled change review")],
+  },
+  inspection: {
+    procedure: procedure("MT-07.05", "Equipment Condition and Safety Inspection", "Maintenance / EHS", ["ISO 9001:2015 7.1.3"]),
+    stages: ["Identify", "Inspect safety", "Inspect mechanical", "Inspect electrical / controls", "Test function", "Classify", "Route action"],
+    fields: [
+      F("asset", "Asset / equipment ID", "text", "Record Context", true), F("location", "Area", "text", "Record Context", true), F("inspection_type", "Inspection type", "select", "Record Context", true, ["Routine operator care", "Maintenance condition", "Safety / guarding", "Post-repair", "Pre-shutdown", "Statutory / insurer"]),
+      F("guarding", "Guards, interlocks, emergency stops", "select", "Evaluation", true, RESULT), F("mechanical", "Mechanical condition, looseness, wear, vibration", "select", "Evaluation", true, RESULT), F("electrical", "Electrical, cables, controls, and panels", "select", "Evaluation", true, RESULT), F("fluids", "Leaks, lubrication, pressure, and temperature", "select", "Evaluation", true, RESULT), F("housekeeping", "Access, housekeeping, labels, and manuals", "select", "Evaluation", true, RESULT), F("functional", "Functional / no-load / loaded test", "select", "Evaluation", true, RESULT),
+      F("readings", "Readings and observed abnormalities", "textarea", "Evaluation", true), F("risk", "Condition risk", "select", "Response & Action", true, ["Green - acceptable", "Yellow - monitor / repair", "Red - remove from service"]), F("immediate_control", "Restriction / tag-out / interim control", "textarea", "Response & Action", undefined, undefined, undefined, { field: "risk", equals: ["Yellow - monitor / repair", "Red - remove from service"] }), F("work_order", "Corrective work order", "text", "Closure"), F("status", "Operating status", "select", "Closure", true, ["Released", "Released with monitoring", "Restricted", "Out of service"]),
+    ],
+    controls: ["Safety, mechanical, electrical, fluid, and functional checks are complete", "Readings and abnormalities are documented", "Red conditions remove equipment from service", "Corrective action and operating status are controlled"],
+    approvalRoles: ["Qualified Inspector / Technician", "Maintenance Supervisor", "Operations Owner", "EHS Authority"], evidenceRequired: true,
+    evidenceGuidance: ["Condition photographs", "Meter / instrument readings", "Tag-out / restriction", "Repair and release evidence"],
+    escalations: [escalation("Red safety or integrity condition", "Remove from service immediately"), escalation("Degradation trend is worsening", "Predictive / reliability review")],
+  },
+  lubrication: {
+    procedure: procedure("MT-07.06", "Lubrication Management", "Maintenance / Reliability", ["ISO 9001:2015 7.1.3"]),
+    stages: ["Verify route", "Identify point", "Clean / inspect", "Apply correct lubricant", "Record quantity", "Control exception", "Complete route"],
+    fields: [
+      F("route", "Lubrication route / plan", "text", "Record Context", true), F("asset", "Asset ID", "text", "Record Context", true), F("point", "Lubrication point", "text", "Record Context", true), F("due_date", "Due date / meter", "text", "Evaluation", true), F("lubricant", "Specified lubricant / grade", "text", "Evaluation", true), F("quantity_required", "Required quantity", "text", "Evaluation", true),
+      F("condition_before", "Point cleanliness, leakage, contamination, and level", "select", "Evaluation", true, ["Acceptable", "Leak observed", "Contamination suspected", "Low / empty", "Over-lubricated", "Point inaccessible / damaged"]), F("quantity_applied", "Quantity applied", "text", "Response & Action", true), F("method", "Application method / equipment", "text", "Response & Action"), F("exception", "Exception / abnormal condition", "textarea", "Response & Action", undefined, undefined, undefined, { field: "condition_before", equals: ["Leak observed", "Contamination suspected", "Low / empty", "Over-lubricated", "Point inaccessible / damaged"] }),
+      F("sample_taken", "Oil / grease sample taken?", "select", "Closure", true, YES_NO_NA), F("work_order", "Corrective work order", "text", "Closure"), F("result", "Task result", "select", "Closure", true, ["Completed", "Completed with finding", "Unable to complete", "Asset out of service"]), F("next_due", "Next due", "text", "Closure", true),
+    ],
+    controls: ["Correct asset, point, lubricant, and quantity are verified", "Contamination control and clean application practices are used", "Abnormalities create controlled follow-up", "Route completion and next due are documented"],
+    approvalRoles: ["Lubrication Technician", "Maintenance Supervisor", "Reliability Engineer"], evidenceRequired: false,
+    evidenceGuidance: ["Lubrication label / point photograph", "Quantity / product evidence", "Sample / analysis reference", "Leak or abnormal-condition evidence"],
+    escalations: [escalation("Wrong lubricant or contamination is suspected", "Stop task and Reliability review"), escalation("Critical point cannot be serviced", "Maintenance priority escalation")],
+  },
+  spares: {
+    procedure: procedure("MT-07.07", "Critical Spare Parts Control", "Maintenance / Stores", ["ISO 9001:2015 7.1.3", "ISO 9001:2015 8.5.4"]),
+    stages: ["Identify spare", "Verify criticality", "Check stock", "Reserve / issue", "Reorder", "Inspect condition", "Reconcile"],
+    fields: [
+      F("part", "Spare part / item", "text", "Record Context", true), F("asset_family", "Applicable asset / BOM", "text", "Record Context", true), F("criticality", "Spare criticality", "select", "Evaluation", true, ["Critical - no alternate / long lead", "Essential", "Routine consumable", "Repairable / rotable"]), F("on_hand", "Quantity on hand", "number", "Evaluation", true), F("reserved", "Quantity reserved", "number", "Evaluation", true), F("minimum", "Minimum / reorder point", "number", "Evaluation", true), F("maximum", "Maximum stock", "number", "Evaluation"), F("lead_time_days", "Supplier / repair lead time (days)", "number", "Evaluation"),
+      F("condition", "Storage, preservation, shelf life, and condition", "select", "Evaluation", true, RESULT), F("issue_work_order", "Issue / reservation work order", "text", "Response & Action"), F("replenishment", "PO / repair / replenishment action", "textarea", "Response & Action"), F("substitute", "Approved substitute / cannibalization plan", "textarea", "Response & Action"), F("final_available", "Available unrestricted quantity", "number", "Closure", true), F("status", "Stock status", "select", "Closure", true, ["Adequate", "Below minimum", "Stockout", "Quality / condition hold", "Obsolete"]),
+    ],
+    controls: ["Part applicability and criticality are verified", "On-hand, reserved, and unrestricted quantities are reconciled", "Condition and preservation are acceptable", "Shortage has replenishment or contingency action"],
+    approvalRoles: ["Maintenance Stores", "Maintenance Planner", "Reliability Engineer", "Purchasing"], evidenceRequired: false,
+    evidenceGuidance: ["Part / label photograph", "Asset BOM / applicability", "Inventory transaction", "Replenishment / repair order"],
+    escalations: [escalation("Critical spare is below minimum or stocked out", "Maintenance, Purchasing, and Operations risk review"), escalation("Spare condition or identity is uncertain", "Quality / Engineering hold")],
+  },
+  predictive: {
+    procedure: procedure("MT-07.08", "Predictive and Condition-Based Maintenance", "Reliability", ["ISO 9001:2015 7.1.3", "ISO 9001:2015 9.1.1"]),
+    stages: ["Select route", "Collect data", "Validate reading", "Compare trend", "Diagnose", "Recommend action", "Verify"],
+    fields: [
+      F("asset", "Asset ID", "text", "Record Context", true), F("technology", "Condition-monitoring technology", "select", "Record Context", true, ["Vibration", "Thermography", "Oil analysis", "Ultrasound", "Motor current", "Performance / efficiency", "Visual / borescope"]), F("measurement_point", "Measurement point / operating condition", "text", "Evaluation", true), F("reading_date", "Reading date", "date", "Evaluation", true), F("reading", "Reading / result", "text", "Evaluation", true), F("alarm_limit", "Alert / alarm limit", "text", "Evaluation", true), F("baseline", "Baseline / previous reading", "text", "Evaluation"),
+      F("trend", "Trend direction", "select", "Evaluation", true, ["Normal / stable", "Improving", "Watch", "Worsening", "Alarm / critical", "Invalid reading"]), F("diagnosis", "Likely fault mode / interpretation", "textarea", "Evaluation", true), F("remaining_life", "Estimated remaining life / action window", "text", "Response & Action"), F("recommendation", "Recommended maintenance / verification", "textarea", "Response & Action", true), F("work_order", "Triggered work order", "text", "Response & Action"), F("follow_up_date", "Follow-up measurement date", "date", "Closure", true), F("verification", "Post-action / repeat-reading verification", "textarea", "Closure"),
+    ],
+    controls: ["Reading is taken at controlled point and operating condition", "Data quality and alarm limits are verified", "Diagnosis considers trend and corroborating evidence", "Action window and follow-up are assigned"],
+    approvalRoles: ["Condition Monitoring Technician", "Reliability Engineer", "Maintenance Planner", "Operations Owner"], evidenceRequired: true,
+    evidenceGuidance: ["Trend plot / analyzer report", "Thermal / waveform / sample evidence", "Operating-condition record", "Work order and post-action reading"],
+    escalations: [escalation("Alarm / critical trend threatens safe or reliable operation", "Maintenance / Operations leadership immediately"), escalation("Reading is invalid on critical asset", "Repeat using qualified method")],
+  },
+  permit: {
+    procedure: procedure("MT-EHS-01", "Maintenance Safe Work and Energy Control Permit", "Maintenance / EHS", ["OSHA 29 CFR 1910.147", "Company EHS requirements"]),
+    stages: ["Define scope", "Identify hazards", "Isolate energy", "Verify zero energy", "Authorize work", "Inspect restoration", "Close permit"],
+    fields: [
+      F("asset", "Asset / equipment / work location", "text", "Record Context", true), F("scope", "Work scope", "textarea", "Record Context", true), F("permit_type", "Permit / control type", "select", "Evaluation", true, ["LOTO", "Electrical", "Hot work", "Confined space", "Line break", "Elevated work", "Excavation", "Lift / rigging", "General maintenance permit"]), F("hazards", "Hazards and energy sources", "textarea", "Evaluation", true), F("isolations", "Isolation points / lock numbers", "textarea", "Evaluation", true), F("zero_energy", "Zero-energy / safe-state verification", "textarea", "Evaluation", true), F("ppe", "PPE and special controls", "textarea", "Evaluation", true),
+      F("affected_people", "Affected employees / operations notification", "textarea", "Response & Action", true), F("authorized_workers", "Authorized workers / contractor", "textarea", "Response & Action", true), F("start", "Permit start", "datetime-local", "Response & Action", true), F("expiration", "Permit expiration", "datetime-local", "Response & Action", true), F("conditions_changed", "Conditions changed during work?", "select", "Response & Action", true, YES_NO), F("revalidation", "Stop / revalidation performed", "textarea", "Response & Action", undefined, undefined, undefined, { field: "conditions_changed", equals: "Yes" }),
+      F("guards_restored", "Guards, tools, people, and work area clear", "select", "Closure", true, RESULT), F("locks_removed", "Locks / isolations removed by authority", "select", "Closure", true, RESULT), F("restart", "Controlled restart and functional verification", "textarea", "Closure", true), F("permit_status", "Permit status", "select", "Closure", true, ["Closed", "Suspended", "Extended / revalidated", "Cancelled"]),
+    ],
+    controls: ["Scope, hazards, energy sources, and controls are complete", "Zero-energy / safe state is independently verified", "Only authorized people perform work", "Restoration, lock removal, restart, and permit closure are controlled"],
+    approvalRoles: ["Authorized Employee", "Maintenance Supervisor", "Operations Owner", "EHS / Permit Authority"], evidenceRequired: true,
+    evidenceGuidance: ["Isolation / lock photographs", "Permit and hazard assessment", "Zero-energy verification", "Restoration / restart evidence"],
+    escalations: [escalation("Isolation cannot be verified or conditions change", "Stop work and reauthorize"), escalation("Permit violation or unexpected energy release", "Emergency response and EHS investigation")],
+  },
+  contractor: {
+    procedure: procedure("MT-07.09", "Contractor Maintenance Control", "Maintenance / EHS / Purchasing", ["ISO 9001:2015 8.4", "Company EHS requirements"]),
+    stages: ["Define scope", "Qualify contractor", "Orient / permit", "Execute", "Inspect", "Accept", "Close"],
+    fields: [
+      F("contractor", "Contractor / company", "text", "Record Context", true), F("po_scope", "PO / service order / scope", "text", "Record Context", true), F("asset_location", "Asset / work location", "text", "Record Context", true), F("qualification", "Insurance, licenses, competency, and approval", "select", "Evaluation", true, RESULT), F("orientation", "Site orientation / EHS requirements", "select", "Evaluation", true, RESULT), F("permits", "Required permits / LOTO / JSA", "textarea", "Evaluation", true),
+      F("schedule", "Planned start / finish", "text", "Evaluation", true), F("site_contact", "Site coordinator / escort", "text", "Response & Action", true), F("work_evidence", "Work performed, parts, settings, and service report", "textarea", "Response & Action", true), F("change_control", "Configuration / software / process change?", "select", "Response & Action", true, YES_NO), F("change_reference", "Controlled change reference", "text", "Response & Action", undefined, undefined, undefined, { field: "change_control", equals: "Yes" }),
+      F("inspection", "Site acceptance / workmanship inspection", "select", "Closure", true, RESULT), F("test", "Functional / safety test", "textarea", "Closure", true), F("documentation", "Manuals, certificates, drawings, and warranty received", "select", "Closure", true, RESULT), F("acceptance", "Contractor work acceptance", "select", "Closure", true, ["Accepted", "Accepted with punch list", "Rejected / rework", "Pending test / documents"]),
+    ],
+    controls: ["Contractor qualification and scope are approved", "Orientation, hazards, permits, and site coordination are complete", "Work and changes are documented", "Inspection, testing, documentation, and acceptance are complete"],
+    approvalRoles: ["Maintenance Coordinator", "EHS Authority", "Technical Owner", "Purchasing / Contract Owner"], evidenceRequired: true,
+    evidenceGuidance: ["Qualification / insurance / credentials", "Permit / JSA evidence", "Service report and work photographs", "Acceptance test and punch-list closure"],
+    escalations: [escalation("Contractor qualification or permit is incomplete", "Do not start work"), escalation("Unapproved change or failed acceptance test", "Stop release and require rework / controlled change")],
+  },
+  technical: {
+    procedure: procedure("MT-07.10", "Technical and Calibration Support Request", "Maintenance / Engineering / Quality", ["ISO 9001:2015 7.1.3", "ISO 9001:2015 7.1.5"]),
+    stages: ["Request", "Classify", "Assess impact", "Assign specialist", "Respond", "Verify", "Close"],
+    fields: [
+      F("request_type", "Support type", "select", "Record Context", true, ["Calibration / metrology", "OEM technical support", "Engineering analysis", "Controls / automation", "Specialist inspection", "Software / firmware", "Vendor service"]), F("asset", "Asset / system / gage", "text", "Record Context", true), F("requester", "Requester", "text", "Record Context", true), F("problem", "Technical question / condition / needed decision", "textarea", "Evaluation", true), F("impact", "Production / quality / safety impact", "select", "Evaluation", true, RISK), F("need_by", "Need-by date / time", "datetime-local", "Evaluation", true),
+      F("data_available", "Drawings, manuals, readings, alarms, and evidence available", "textarea", "Evaluation", true), F("assigned_to", "Assigned specialist / provider", "text", "Response & Action", true), F("response_plan", "Response / diagnostic plan", "textarea", "Response & Action", true), F("interim_control", "Interim operating restriction / alternate method", "textarea", "Response & Action"), F("recommendation", "Technical recommendation / decision", "textarea", "Closure", true), F("work_order_change", "Triggered work order / change / calibration record", "text", "Closure"), F("verification", "Requester verification / outcome", "textarea", "Closure", true), F("status", "Request status", "select", "Closure", true, ["Resolved", "Work order opened", "Engineering change opened", "Vendor action pending", "Unable to resolve"]),
+    ],
+    controls: ["Request, impact, and decision needed are clear", "Qualified specialist and response timing are assigned", "Interim risk is controlled", "Recommendation and outcome are verified and linked to resulting work"],
+    approvalRoles: ["Maintenance Planner", "Engineering Authority", "Calibration / Quality Authority", "Operations Owner"], evidenceRequired: false,
+    evidenceGuidance: ["Manuals, drawings, alarms, and readings", "OEM / specialist correspondence", "Technical report", "Linked work order / change / calibration evidence"],
+    escalations: [escalation("Critical impact and no timely specialist response", "Maintenance / Engineering leadership and contingency decision"), escalation("Recommendation changes validated process or safety control", "Controlled change review")],
+  },
+  rootcause: {
+    procedure: procedure("MT-10.01", "Reliability Root Cause and Defect Elimination", "Reliability / Maintenance", ["ISO 9001:2015 10.2", "ISO 9001:2015 10.3"]),
+    stages: ["Select event", "Preserve evidence", "Build timeline", "Analyze failure", "Identify physical / human / latent causes", "Implement", "Verify reliability"],
+    fields: [
+      F("asset", "Asset / system", "text", "Record Context", true), F("event", "Breakdown / failure / loss event", "text", "Record Context", true), F("trigger", "RCA trigger", "select", "Record Context", true, ["Repeat failure", "Critical downtime", "Safety / environmental risk", "High repair cost", "Chronic defect", "Management request"]), F("problem", "Failure statement and business impact", "textarea", "Evaluation", true), F("timeline", "Event timeline and operating conditions", "textarea", "Evaluation", true), F("evidence", "Physical evidence, data, failed parts, and interviews", "textarea", "Evaluation", true),
+      F("method", "Analysis method", "select", "Evaluation", true, ["5-Why", "Fishbone", "Fault tree", "Apollo / cause mapping", "RCFA", "FMEA / Weibull / data analysis", "Multi-method"]), F("physical_cause", "Physical / technical cause", "textarea", "Evaluation", true), F("human_factors", "Human-performance / task / interface factors", "textarea", "Evaluation"), F("latent_cause", "Latent system / management cause", "textarea", "Evaluation", true), F("escape_cause", "Why monitoring / PM / inspection did not prevent or detect it", "textarea", "Evaluation", true),
+      F("correction", "Repair / correction", "textarea", "Response & Action", true), F("defect_elimination", "Permanent defect-elimination action", "textarea", "Response & Action", true), F("pm_strategy", "PM / predictive / spare / training strategy changes", "textarea", "Response & Action", true), F("implementation", "Implementation completion date", "date", "Closure", true), F("effectiveness", "Reliability effectiveness criterion", "textarea", "Closure", true), F("review_date", "Reliability review date", "date", "Closure", true), F("result", "Effectiveness result", "select", "Closure", true, ["Effective", "Partially effective", "Ineffective", "Pending run time"]),
+    ],
+    controls: ["Evidence and failed parts are preserved", "Physical, human, latent, and escape causes are distinguished", "Actions change the reliability system—not only repair the asset", "Effectiveness is verified using sufficient run time / condition data"],
+    approvalRoles: ["Reliability Engineer", "Maintenance Manager", "Operations Manager", "Engineering / EHS / Quality Authority"], evidenceRequired: true,
+    evidenceGuidance: ["Failed-part / condition evidence", "Timeline and trend data", "Analysis diagrams", "Implementation and reliability-effectiveness evidence"],
+    escalations: [escalation("Failure has safety, environmental, or broad product impact", "Cross-functional executive review"), escalation("Effectiveness is partial / ineffective", "Reopen analysis and escalate defect-elimination plan")],
+  },
+};
+
+export const smartMaintenanceConfig = specializeWorkspace(
+  smartWorkspaceConfigs.maintenance,
+  profiles,
+  "Plan, execute, verify, and improve maintenance through purpose-built work management, preventive, predictive, breakdown, safety, spare-parts, contractor, and reliability workflows.",
+  "ASSET RELIABILITY, MAINTENANCE EXECUTION & DEFECT ELIMINATION",
+);
