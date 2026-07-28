@@ -1,2 +1,5 @@
-import SmartDisciplineWorkspace from "@/app/components/SmartDisciplineWorkspace";
-export default function Page(){return <SmartDisciplineWorkspace discipline="operations"/>}
+import SmartOperationsWorkspace from "@/app/components/smart-workspaces/SmartOperationsWorkspace";
+
+export default function Page() {
+  return <SmartOperationsWorkspace />;
+}
