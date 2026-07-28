@@ -2,8 +2,8 @@ import { ArrowRight, Boxes, ClipboardCheck, Gauge, HardHat, Settings, ShieldChec
 import { NORTHSTAR_LOGO_DATA_URI, QMSPILOT_LOGO_DATA_URI } from "@/lib/northstar-brand-assets";
 
 const tools = [
-  { title: "Smart Warehouse", description: "Warehouse execution, inventory visibility, receiving, kitting, quarantine, shipping, safety, and AI insights.", href: "/smart-warehouse", icon: Boxes, status: "NEW · READY" },
-  { title: "Quality Execution", description: "NCR, CAPA, audits, inspection evidence, corrective actions, and verified closure.", href: "/dashboard", icon: ClipboardCheck, status: "CONNECTED" },
+  { title: "Smart Quality", description: "Quality execution, inspection, NCR, CAPA, audits, calibration, supplier quality, customer assurance, documents, and AI insights.", href: "/smart-quality", icon: ClipboardCheck, status: "NEW · READY" },
+  { title: "Smart Warehouse", description: "Warehouse execution, inventory visibility, receiving, kitting, quarantine, shipping, safety, and AI insights.", href: "/smart-warehouse", icon: Boxes, status: "READY" },
   { title: "AI Workforce", description: "Pilot and specialist agents convert operating evidence into supervised decisions and actions.", href: "/workforce-operations", icon: Gauge, status: "CONNECTED" },
   { title: "Safety Operations", description: "Inspections, observations, hazards, PPE, and safety action tracking.", href: "/", icon: HardHat, status: "ROADMAP" },
   { title: "Maintenance", description: "Preventive maintenance, equipment health, downtime, and work verification.", href: "/", icon: Wrench, status: "ROADMAP" },
@@ -16,31 +16,14 @@ export default function ToolboxPage() {
       <aside>
         <div className="logo"><img src={QMSPILOT_LOGO_DATA_URI} alt="QMSPilot" /></div>
         <div className="northstar"><img src={NORTHSTAR_LOGO_DATA_URI} alt="Northstar" /></div>
-        <nav>
-          <a href="/">Command Center</a>
-          <a href="/workforce-operations">AI Workforce Operations</a>
-          <a href="/entity-graph">Entity Graph</a>
-          <a href="/dashboard">Accountability</a>
-          <a className="active" href="/toolbox">Digital Toolbox</a>
-        </nav>
+        <nav><a href="/">Command Center</a><a href="/workforce-operations">AI Workforce Operations</a><a href="/entity-graph">Entity Graph</a><a href="/dashboard">Accountability</a><a className="active" href="/toolbox">Digital Toolbox</a></nav>
         <div className="boundary"><ShieldCheck size={18}/><span>Human authority and controlled writeback remain mandatory.</span></div>
       </aside>
       <section className="main">
         <header><div><small>QMSPILOT NORTHSTAR</small><strong>Digital Toolbox</strong></div><span>Connected operating applications</span></header>
         <div className="content">
-          <section className="hero">
-            <div><small>DIGITAL OPERATIONS PLATFORM</small><h1>Open the right tool. Complete the work. Submit it to Northstar.</h1><p>Every application uses a consistent workflow and returns records, evidence, actions, status, and measurable results to the Northstar command layer.</p></div>
-            <div className="flow"><b>Field Tool</b><ArrowRight/><b>Submit to Northstar</b><ArrowRight/><b>Leadership Visibility</b></div>
-          </section>
-          <section className="grid">
-            {tools.map(({title,description,href,icon:Icon,status}) => (
-              <a className={title === "Smart Warehouse" ? "tile featured" : "tile"} href={href} key={title}>
-                <div className="tile-top"><span><Icon size={25}/></span><em>{status}</em></div>
-                <h2>{title}</h2><p>{description}</p>
-                <div className="open">Open workspace <ArrowRight size={16}/></div>
-              </a>
-            ))}
-          </section>
+          <section className="hero"><div><small>DIGITAL OPERATIONS PLATFORM</small><h1>Open the right tool. Complete the work. Submit it to Northstar.</h1><p>Every application uses a consistent workflow and returns records, evidence, actions, status, and measurable results to the Northstar command layer.</p></div><div className="flow"><b>Field Tool</b><ArrowRight/><b>Submit to Northstar</b><ArrowRight/><b>Leadership Visibility</b></div></section>
+          <section className="grid">{tools.map(({title,description,href,icon:Icon,status}) => (<a className={title.startsWith("Smart") ? "tile featured" : "tile"} href={href} key={title}><div className="tile-top"><span><Icon size={25}/></span><em>{status}</em></div><h2>{title}</h2><p>{description}</p><div className="open">Open workspace <ArrowRight size={16}/></div></a>))}</section>
         </div>
       </section>
       <style>{`
