@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { NORTHSTAR_OFFICIAL_LOGO_DATA_URI } from "@/lib/northstar-official-logo";
 
 const NORTHSTAR_ALT = /^northstar$/i;
@@ -22,7 +22,7 @@ function synchronize(root: ParentNode = document) {
 }
 
 export function NorthstarPhotographicBrandSync() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     synchronize();
 
     const observer = new MutationObserver((mutations) => {
