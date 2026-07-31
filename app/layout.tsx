@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { CloudWorkspaceProvider } from "@/components/cloud-workspace";
+import { NorthstarAccountControl } from "@/components/northstar-account-control";
 import { NorthstarPhotographicBrandSync } from "@/components/northstar-photographic-brand-sync";
 import { NorthstarDashboardLauncher } from "@/components/northstar-dashboard-launcher";
 import { NorthstarNavigationSync } from "@/components/northstar-navigation-sync";
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <CloudWorkspaceProvider>
           <NorthstarPhotographicBrandSync />
           <NorthstarNavigationSync />
+          <NorthstarAccountControl />
           {children}
           <NorthstarToolActionInbox />
           <NorthstarWorkforceLauncher />
