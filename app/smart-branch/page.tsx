@@ -1,5 +1,5 @@
-import SmartBranchWorkspace from "@/app/components/smart-workspaces/SmartBranchWorkspace";
+import SmartBranchWorkspaceReliable from "@/app/components/smart-workspaces/SmartBranchWorkspaceReliable";
 
 export default function Page() {
-  return <SmartBranchWorkspace />;
+  return <SmartBranchWorkspaceReliable />;
 }
