@@ -28,6 +28,10 @@ function iconMarkup() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;
 }
 
+function setMarkup(node: HTMLElement, markup: string) {
+  if (node.innerHTML !== markup) node.innerHTML = markup;
+}
+
 function addNavigatorCard() {
   if (document.querySelector(`.navigator-shell a[href="${href}"]`)) return;
   const titles = Array.from(document.querySelectorAll<HTMLElement>(".navigator-shell .section-title h2"));
@@ -70,7 +74,7 @@ function addExecutiveIntelligence() {
       metric.className = "six-s-ei-metric";
       metrics.insertBefore(metric, metrics.children[2] || null);
     }
-    metric.innerHTML = `<small>6S workplace excellence</small><strong>${summary.enterpriseScore}%</strong><span>${summary.criticalSafety} critical safety gate · ${summary.openRedTags} open red tags</span>`;
+    setMarkup(metric, `<small>6S workplace excellence</small><strong>${summary.enterpriseScore}%</strong><span>${summary.criticalSafety} critical safety gate · ${summary.openRedTags} open red tags</span>`);
   }
 
   const grid = document.querySelector<HTMLElement>(".ei-shell .view-grid");
@@ -82,11 +86,11 @@ function addExecutiveIntelligence() {
       card.setAttribute("href", href);
       grid.insertBefore(card, grid.children[1] || null);
     }
-    card.innerHTML = `<div class="view-top"><span>${iconMarkup()}</span><div><strong>${summary.enterpriseScore}%</strong><small>${summary.areasAtTarget}/${summary.totalAreas} areas at target</small></div></div><h3>6S Workplace Excellence</h3><p>Area maturity, safety release gates, red-tag aging, visual controls, audit completion, repeat findings, sustainment, and verified space or value recovery.</p><b>Open operational source <span aria-hidden="true">→</span></b>`;
+    setMarkup(card, `<div class="view-top"><span>${iconMarkup()}</span><div><strong>${summary.enterpriseScore}%</strong><small>${summary.areasAtTarget}/${summary.totalAreas} areas at target</small></div></div><h3>6S Workplace Excellence</h3><p>Area maturity, safety release gates, red-tag aging, visual controls, audit completion, repeat findings, sustainment, and verified space or value recovery.</p><b>Open operational source <span aria-hidden="true">→</span></b>`);
   }
 
   const sectionCount = Array.from(document.querySelectorAll<HTMLElement>(".ei-shell .section-head > span")).find((node) => node.textContent?.includes("connected views"));
-  if (sectionCount) sectionCount.textContent = "7 connected views";
+  if (sectionCount && sectionCount.textContent !== "7 connected views") sectionCount.textContent = "7 connected views";
 }
 
 export function SixSPlatformSync() {
