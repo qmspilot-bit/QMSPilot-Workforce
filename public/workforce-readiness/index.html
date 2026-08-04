@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QMSPilot Workforce Readiness</title>
+  <style>
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#07111f;color:#f4f8fc;font-family:Inter,Segoe UI,Arial,sans-serif}
+    .loading{max-width:520px;padding:28px;text-align:center;background:#0d1b2d;border:1px solid #29415f;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.28)}
+    .loading strong{display:block;font-size:1.35rem;margin-bottom:8px}.loading span{color:#9eb0c6}.error{color:#ffbdc4}
+  </style>
+</head>
+<body>
+  <div class="loading" id="status"><strong>Loading QMSPilot Northstar</strong><span>Controlled Work Instructions & Workforce Readiness</span></div>
+  <script>
+    const source='https://raw.githubusercontent.com/qmspilot-bit/QMSPilot-Corrective-Action-CAPA-Northstar/agent/controlled-work-instructions-workforce-readiness/workforce-readiness/index.html';
+    fetch(source,{cache:'no-store'})
+      .then(response=>{if(!response.ok)throw new Error('Workspace source could not be loaded.');return response.text();})
+      .then(html=>{document.open();document.write(html);document.close();})
+      .catch(error=>{document.getElementById('status').innerHTML='<strong class="error">Workspace unavailable</strong><span>'+error.message+' Refresh the page or try again shortly.</span>';});
+  </script>
+</body>
+</html>
