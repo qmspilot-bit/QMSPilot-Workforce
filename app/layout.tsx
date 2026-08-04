@@ -7,6 +7,7 @@ import { NorthstarMotionSystem } from "@/components/northstar-motion-system";
 import { NorthstarPhotographicBrandSync } from "@/components/northstar-photographic-brand-sync";
 import { NorthstarNavigationSync } from "@/components/northstar-navigation-sync";
 import { ProcessAssuranceCloudBridge } from "@/components/process-assurance-cloud-bridge";
+import { SixSPlatformSync } from "@/components/six-s-platform-sync";
 
 export const metadata: Metadata = {
   title: "Northstar | QMSPilot Workforce",
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           <NorthstarMotionSystem />
           <NorthstarPhotographicBrandSync />
           <NorthstarNavigationSync />
+          <SixSPlatformSync />
           <NorthstarApplicationChrome />
           {children}
           <ProcessAssuranceCloudBridge />
