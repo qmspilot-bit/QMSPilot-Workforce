@@ -1,393 +1,447 @@
 "use client";
 
-import { ArrowRight, GraduationCap, ShieldCheck, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BadgeCheck,
+  BookOpenCheck,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
+  Download,
+  Eye,
+  FileText,
+  GraduationCap,
+  Pencil,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+  UserPlus,
+  UserRoundCheck,
+  Users,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
-const guidance = {
-  Qualified: {
-    title: "Authorized capability",
-    copy: "This employee is qualified for independent work. Keep the supporting evidence, revision, and expiration date current.",
-    action: "Review evidence and expiration",
+const people = [
+  {
+    id: "EMP-014",
+    name: "Maria Torres",
+    role: "Assembly Technician",
+    department: "Operations",
+    area: "Final Assembly",
+    readiness: "Training required",
+    coverage: "3 of 5",
+    continuity: "Backup available",
+    continuityNote: "2 qualified backups",
+    nextDue: "2026-08-06",
+    owner: "Assembly Lead",
+    skills: [
+      ["Fan Assembly", "Training"],
+      ["Final Inspection", "Supervised"],
+      ["Packaging", "Qualified"],
+      ["Electrical Test", "N/A"],
+      ["Foam Setup", "N/A"],
+    ],
   },
-  Training: {
-    title: "Training in progress",
-    copy: "The employee has an open learning requirement and is not yet approved for independent work on this process.",
-    action: "Open training assignments",
+  {
+    id: "EMP-021",
+    name: "Andre Lewis",
+    role: "Test Technician",
+    department: "Quality",
+    area: "Electrical Test",
+    readiness: "Expired",
+    coverage: "4 of 5",
+    continuity: "No backup",
+    continuityNote: "Single-point capability",
+    nextDue: "Overdue",
+    owner: "Quality Supervisor",
+    skills: [
+      ["Electrical Test", "Expired"],
+      ["Final Inspection", "Qualified"],
+      ["Fan Assembly", "Qualified"],
+      ["Packaging", "Qualified"],
+      ["Foam Setup", "N/A"],
+    ],
   },
-  Expired: {
-    title: "Qualification expired",
-    copy: "Independent work should be restricted until the employee is revalidated against the current controlled instruction.",
-    action: "Start revalidation",
+  {
+    id: "EMP-027",
+    name: "James Cole",
+    role: "Test Technician",
+    department: "Quality",
+    area: "Electrical Test",
+    readiness: "Expired",
+    coverage: "4 of 5",
+    continuity: "No backup",
+    continuityNote: "Single-point capability",
+    nextDue: "Overdue",
+    owner: "Quality Supervisor",
+    skills: [
+      ["Electrical Test", "Expired"],
+      ["Final Inspection", "Qualified"],
+      ["Fan Assembly", "Qualified"],
+      ["Packaging", "Qualified"],
+      ["Foam Setup", "N/A"],
+    ],
   },
-  Supervised: {
-    title: "Qualified with supervision",
-    copy: "The employee can perform the work only with defined oversight. A practical evaluation is the next controlled step.",
-    action: "Open competency signoff",
+  {
+    id: "EMP-032",
+    name: "Sofia Reed",
+    role: "Foam Operator",
+    department: "Operations",
+    area: "Foam Operations",
+    readiness: "Training required",
+    coverage: "2 of 4",
+    continuity: "Backup available",
+    continuityNote: "1 qualified backup",
+    nextDue: "2026-08-09",
+    owner: "Production Supervisor",
+    skills: [
+      ["Foam Setup", "Training"],
+      ["Final Inspection", "Supervised"],
+      ["Packaging", "Qualified"],
+      ["Fan Assembly", "N/A"],
+      ["Electrical Test", "N/A"],
+    ],
   },
-  "N/A": {
-    title: "No role requirement",
-    copy: "This process is not currently assigned to the employee's role. No training or authorization action is required.",
-    action: "Review role coverage",
+  {
+    id: "EMP-036",
+    name: "Caleb Young",
+    role: "Foam Operator",
+    department: "Operations",
+    area: "Foam Operations",
+    readiness: "Ready",
+    coverage: "4 of 4",
+    continuity: "Backup available",
+    continuityNote: "2 qualified backups",
+    nextDue: "2027-03-10",
+    owner: "Production Supervisor",
+    skills: [
+      ["Foam Setup", "Qualified"],
+      ["Final Inspection", "Supervised"],
+      ["Packaging", "Qualified"],
+      ["Fan Assembly", "N/A"],
+      ["Electrical Test", "N/A"],
+    ],
   },
-};
+  {
+    id: "EMP-041",
+    name: "Emily Chen",
+    role: "Quality Technician",
+    department: "Quality",
+    area: "Final Inspection",
+    readiness: "Ready",
+    coverage: "5 of 5",
+    continuity: "Backup available",
+    continuityNote: "3 qualified backups",
+    nextDue: "2027-02-18",
+    owner: "Quality Manager",
+    skills: [
+      ["Final Inspection", "Qualified"],
+      ["Electrical Test", "Qualified"],
+      ["Fan Assembly", "Supervised"],
+      ["Packaging", "Qualified"],
+      ["Foam Setup", "N/A"],
+    ],
+  },
+];
 
-function statusFromCode(code) {
-  return ({ Q: "Qualified", T: "Training", E: "Expired", S: "Supervised", "—": "N/A" })[code] || "N/A";
+const qualificationControls = [
+  {
+    employee: "Andre Lewis",
+    process: "Electrical Functional Test",
+    trigger: "revision change",
+    frequency: "WI-TEST-014 Rev C",
+    owner: "Quality Supervisor",
+    lastCompleted: "2025-08-03",
+    nextDue: "Overdue",
+    status: "Expired",
+  },
+  {
+    employee: "James Cole",
+    process: "Electrical Functional Test",
+    trigger: "annual",
+    frequency: "Every 12 months",
+    owner: "Quality Supervisor",
+    lastCompleted: "2025-08-04",
+    nextDue: "Overdue",
+    status: "Expired",
+  },
+  {
+    employee: "Maria Torres",
+    process: "Fan Motor Assembly",
+    trigger: "new qualification",
+    frequency: "Practical demonstration",
+    owner: "Assembly Lead",
+    lastCompleted: "Awareness complete",
+    nextDue: "2026-08-06",
+    status: "Evaluation due",
+  },
+  {
+    employee: "Sofia Reed",
+    process: "Foam Fixture Setup",
+    trigger: "revision change",
+    frequency: "WI-FOAM-009 Rev D",
+    owner: "Production Supervisor",
+    lastCompleted: "2026-03-10",
+    nextDue: "2026-08-09",
+    status: "Training open",
+  },
+  {
+    employee: "Caleb Young",
+    process: "Foam Fixture Setup",
+    trigger: "annual",
+    frequency: "Every 12 months",
+    owner: "Production Supervisor",
+    lastCompleted: "2026-03-10",
+    nextDue: "2027-03-10",
+    status: "Controlled",
+  },
+];
+
+function badgeClass(value) {
+  if (["Ready", "Qualified", "Controlled"].includes(value)) return "good";
+  if (["Training required", "Training", "Training open", "Supervised", "Evaluation due"].includes(value)) return "warn";
+  if (["Expired", "Overdue"].includes(value)) return "bad";
+  return "blue";
+}
+
+function clickWorkspaceTab(label) {
+  const button = Array.from(document.querySelectorAll(".wr-sidebar nav button")).find((node) => node.textContent?.includes(label));
+  button?.click();
 }
 
 export default function WorkforceReadinessExperienceEnhancer() {
+  const [portalTarget, setPortalTarget] = useState(null);
+  const [active, setActive] = useState(false);
+  const [query, setQuery] = useState("");
+  const [department, setDepartment] = useState("All departments");
+  const [status, setStatus] = useState("All readiness states");
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    const decorated = new WeakSet();
-    let frame = 0;
+    const content = document.querySelector(".wr-content");
+    if (content) setPortalTarget(content);
 
-    const clearFocus = (table) => {
-      table.querySelectorAll(".is-row-focus,.is-column-focus").forEach((node) => node.classList.remove("is-row-focus", "is-column-focus"));
+    const syncNativePanel = () => {
+      const matrixPanel = Array.from(document.querySelectorAll(".wr-content .wr-panel")).find((panel) => panel.querySelector("h2")?.textContent?.includes("Workforce Readiness Matrix"));
+      if (matrixPanel) matrixPanel.style.display = active ? "none" : "";
     };
 
-    const decorate = () => {
-      const table = document.querySelector("table.wr-matrix");
-      if (!table) return;
-      const wrapper = table.closest(".wr-table");
-      wrapper?.classList.add("wr-matrix-enhanced");
-      const headers = Array.from(table.querySelectorAll("thead th"));
-      const rows = Array.from(table.querySelectorAll("tbody tr"));
+    const buttons = Array.from(document.querySelectorAll(".wr-sidebar nav button"));
+    const listeners = [];
+    buttons.forEach((button) => {
+      const handler = () => {
+        const isMatrix = button.textContent?.includes("Readiness Matrix");
+        setActive(Boolean(isMatrix));
+      };
+      button.addEventListener("click", handler);
+      listeners.push([button, handler]);
+    });
 
-      rows.forEach((row, rowIndex) => {
-        row.style.setProperty("--matrix-row-delay", `${rowIndex * 55}ms`);
-        const identity = row.querySelector("td:first-child");
-        const employee = identity?.querySelector("strong")?.textContent?.trim() || "Employee";
-        const role = identity?.querySelector("small")?.textContent?.trim() || "Role";
-
-        Array.from(row.querySelectorAll("td")).slice(1).forEach((cell, skillIndex) => {
-          if (decorated.has(cell)) return;
-          decorated.add(cell);
-          const code = cell.textContent?.trim() || "—";
-          const status = statusFromCode(code);
-          const skill = headers[skillIndex + 1]?.textContent?.trim() || "Capability";
-          cell.classList.add("wr-matrix-interactive-cell");
-          cell.dataset.matrixStatus = status;
-          cell.dataset.matrixColumn = String(skillIndex + 1);
-          cell.tabIndex = 0;
-          cell.setAttribute("role", "button");
-          cell.setAttribute("aria-label", `${employee}, ${skill}: ${status}`);
-          cell.style.setProperty("--matrix-delay", `${rowIndex * 55 + skillIndex * 28}ms`);
-
-          const activate = () => {
-            table.querySelectorAll(".is-selected-cell").forEach((node) => node.classList.remove("is-selected-cell"));
-            cell.classList.add("is-selected-cell");
-            setSelected({ employee, role, skill, status });
-          };
-
-          cell.addEventListener("click", activate);
-          cell.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              activate();
-            }
-          });
-          cell.addEventListener("mouseenter", () => {
-            clearFocus(table);
-            row.classList.add("is-row-focus");
-            table.querySelectorAll(`th:nth-child(${skillIndex + 2}), td:nth-child(${skillIndex + 2})`).forEach((node) => node.classList.add("is-column-focus"));
-          });
-          cell.addEventListener("mouseleave", () => clearFocus(table));
-        });
-      });
-    };
-
-    const scheduleDecorate = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(decorate);
-    };
-
-    scheduleDecorate();
-    const observer = new MutationObserver(scheduleDecorate);
+    const observer = new MutationObserver(syncNativePanel);
     observer.observe(document.body, { childList: true, subtree: true });
-    return () => {
-      window.cancelAnimationFrame(frame);
-      observer.disconnect();
-    };
-  }, []);
+    syncNativePanel();
 
-  const navigateTo = (label) => {
-    const button = Array.from(document.querySelectorAll(".wr-sidebar nav button")).find((node) => node.textContent?.includes(label));
-    button?.click();
-    setSelected(null);
+    return () => {
+      observer.disconnect();
+      listeners.forEach(([button, handler]) => button.removeEventListener("click", handler));
+      const matrixPanel = Array.from(document.querySelectorAll(".wr-content .wr-panel")).find((panel) => panel.querySelector("h2")?.textContent?.includes("Workforce Readiness Matrix"));
+      if (matrixPanel) matrixPanel.style.display = "";
+    };
+  }, [active]);
+
+  const filteredPeople = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return people.filter((person) => {
+      const matchesQuery = !normalized || `${person.name} ${person.id} ${person.role} ${person.area}`.toLowerCase().includes(normalized);
+      const matchesDepartment = department === "All departments" || person.department === department;
+      const matchesStatus = status === "All readiness states" || person.readiness === status;
+      return matchesQuery && matchesDepartment && matchesStatus;
+    });
+  }, [query, department, status]);
+
+  const exportCsv = () => {
+    const header = ["Employee", "Employee ID", "Role", "Department", "Work Center", "Readiness", "Coverage", "Continuity", "Next Due", "Owner"];
+    const rows = filteredPeople.map((person) => [person.name, person.id, person.role, person.department, person.area, person.readiness, person.coverage, person.continuity, person.nextDue, person.owner]);
+    const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "Davicorp-Workforce-Readiness.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
-  const selectedGuidance = selected ? guidance[selected.status] || guidance["N/A"] : null;
+  if (!portalTarget || !active) return null;
 
-  return (
+  return createPortal(
     <>
-      {selected && selectedGuidance && (
-        <div className="ns-matrix-backdrop" onClick={() => setSelected(null)}>
-          <aside className="ns-matrix-drawer" onClick={(event) => event.stopPropagation()} aria-live="polite">
-            <div className="ns-matrix-drawer-head">
-              <div>
-                <small>WORKFORCE READINESS DETAIL</small>
-                <h2>{selected.employee}</h2>
-                <p>{selected.role}</p>
-              </div>
-              <button aria-label="Close readiness detail" onClick={() => setSelected(null)}><X size={18} /></button>
+      <div className="wr-restored-stack">
+        <section className="wr-register-card">
+          <header className="wr-register-heading">
+            <div>
+              <small>07 · WORKFORCE READINESS REGISTER</small>
+              <h2>Know who is qualified, where gaps exist, and what must happen next</h2>
+              <p>Search the workforce, review coverage and continuity, open qualification evidence, and route the next controlled action.</p>
+            </div>
+            <SlidersHorizontal size={20} />
+          </header>
+
+          <div className="wr-register-toolbar">
+            <button className="primary" onClick={() => clickWorkspaceTab("Competency Signoff")}><UserPlus size={15} /> Add employee</button>
+            <button onClick={() => clickWorkspaceTab("Training Assignments")}><GraduationCap size={15} /> Assign training</button>
+            <button onClick={exportCsv}><Download size={15} /> Download matrix</button>
+            <a href="/executive-intelligence"><ArrowRight size={15} /> Executive readiness</a>
+          </div>
+
+          <div className="wr-register-filters">
+            <label><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search employee, role, work center, or employee ID" /></label>
+            <select value={department} onChange={(event) => setDepartment(event.target.value)} aria-label="Filter by department">
+              <option>All departments</option>
+              <option>Operations</option>
+              <option>Quality</option>
+            </select>
+            <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter by readiness state">
+              <option>All readiness states</option>
+              <option>Ready</option>
+              <option>Training required</option>
+              <option>Expired</option>
+            </select>
+          </div>
+
+          <div className="wr-register-table-wrap">
+            <table className="wr-register-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Department / Area</th>
+                  <th>Coverage</th>
+                  <th>Readiness</th>
+                  <th>Next control</th>
+                  <th>Continuity</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPeople.map((person) => (
+                  <tr key={person.id}>
+                    <td>
+                      <div className="wr-person-cell">
+                        <span><Users size={17} /></span>
+                        <div><strong>{person.name}</strong><small>{person.id} · {person.role}</small></div>
+                      </div>
+                    </td>
+                    <td><strong>{person.department}</strong><small>{person.area}</small></td>
+                    <td><strong>{person.coverage} qualified</strong><small>Required capabilities</small></td>
+                    <td><span className={`wr-register-badge ${badgeClass(person.readiness)}`}>{person.readiness}</span></td>
+                    <td><strong className={person.nextDue === "Overdue" ? "is-overdue" : ""}>{person.nextDue}</strong><small>{person.owner}</small></td>
+                    <td><strong>{person.continuity}</strong><small>{person.continuityNote}</small></td>
+                    <td>
+                      <div className="wr-register-actions">
+                        <button aria-label={`View ${person.name} qualification details`} onClick={() => setSelected(person)}><Eye size={14} /></button>
+                        <button aria-label={`Edit ${person.name}`} onClick={() => clickWorkspaceTab("Competency Signoff")}><Pencil size={14} /></button>
+                        <button aria-label={`Assign training to ${person.name}`} onClick={() => clickWorkspaceTab("Training Assignments")}><GraduationCap size={14} /></button>
+                        <button aria-label={`Review controlled documents for ${person.name}`} onClick={() => clickWorkspaceTab("Document Library")}><BookOpenCheck size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="wr-register-card">
+          <header className="wr-register-heading">
+            <div>
+              <small>08 · TRAINING & QUALIFICATION CONTROL</small>
+              <h2>Convert competency requirements into accountable schedules</h2>
+              <p>Each open item has a trigger, owner, due date, evidence expectation, and controlled status.</p>
+            </div>
+            <ClipboardCheck size={20} />
+          </header>
+
+          <div className="wr-register-table-wrap">
+            <table className="wr-register-table wr-control-table">
+              <thead>
+                <tr>
+                  <th>Employee / Process</th>
+                  <th>Trigger</th>
+                  <th>Owner</th>
+                  <th>Last completed</th>
+                  <th>Next due</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {qualificationControls.map((item) => (
+                  <tr key={`${item.employee}-${item.process}`}>
+                    <td><strong>{item.process}</strong><small>{item.employee}</small></td>
+                    <td><strong>{item.trigger}</strong><small>{item.frequency}</small></td>
+                    <td><strong>{item.owner}</strong></td>
+                    <td><strong>{item.lastCompleted}</strong></td>
+                    <td><strong className={item.nextDue === "Overdue" ? "is-overdue" : ""}>{item.nextDue}</strong></td>
+                    <td><span className={`wr-register-badge ${badgeClass(item.status)}`}>{item.status}</span></td>
+                    <td>
+                      <div className="wr-register-actions">
+                        <button aria-label="Open qualification control" onClick={() => clickWorkspaceTab("Training Assignments")}><Eye size={14} /></button>
+                        <button aria-label="Edit qualification control" onClick={() => clickWorkspaceTab("Competency Signoff")}><Pencil size={14} /></button>
+                        <button aria-label="Revalidate qualification" onClick={() => clickWorkspaceTab("Competency Signoff")}><RefreshCw size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      {selected && (
+        <div className="wr-register-modal-backdrop" onClick={() => setSelected(null)}>
+          <aside className="wr-register-modal" onClick={(event) => event.stopPropagation()}>
+            <header>
+              <div><small>EMPLOYEE QUALIFICATION RECORD</small><h2>{selected.name}</h2><p>{selected.id} · {selected.role} · {selected.area}</p></div>
+              <button aria-label="Close employee details" onClick={() => setSelected(null)}><X size={18} /></button>
+            </header>
+
+            <div className="wr-person-summary">
+              <div><span><UserRoundCheck size={19} /></span><small>Readiness</small><strong>{selected.readiness}</strong></div>
+              <div><span><BadgeCheck size={19} /></span><small>Coverage</small><strong>{selected.coverage}</strong></div>
+              <div><span><ShieldCheck size={19} /></span><small>Continuity</small><strong>{selected.continuity}</strong></div>
             </div>
 
-            <div className={`ns-matrix-status status-${selected.status.toLowerCase().replace(/[^a-z]/g, "")}`}>
-              <span>{selected.status === "Qualified" ? <ShieldCheck size={22} /> : <GraduationCap size={22} />}</span>
-              <div><small>{selected.skill}</small><strong>{selectedGuidance.title}</strong></div>
-            </div>
+            <section className="wr-qualification-list">
+              <div className="wr-modal-section-title"><div><small>PROCESS QUALIFICATIONS</small><h3>Current capability evidence</h3></div><FileText size={18} /></div>
+              {selected.skills.map(([skill, state]) => (
+                <div key={skill}>
+                  <span className={`wr-skill-icon ${badgeClass(state)}`}>
+                    {state === "Qualified" ? <CheckCircle2 size={15} /> : state === "Expired" ? <AlertTriangle size={15} /> : state === "N/A" ? <X size={15} /> : <Clock3 size={15} />}
+                  </span>
+                  <span><strong>{skill}</strong><small>{state === "Qualified" ? "Current controlled evidence on file" : state === "Expired" ? "Independent work restricted until revalidation" : state === "Training" ? "Training and practical signoff remain open" : state === "Supervised" ? "Work permitted only with defined oversight" : "Not required for current role"}</small></span>
+                  <em className={`wr-register-badge ${badgeClass(state)}`}>{state}</em>
+                </div>
+              ))}
+            </section>
 
-            <p className="ns-matrix-guidance">{selectedGuidance.copy}</p>
-
-            <div className="ns-matrix-path">
-              <div><span>01</span><strong>Controlled instruction</strong></div>
-              <i>→</i>
-              <div><span>02</span><strong>Training evidence</strong></div>
-              <i>→</i>
-              <div><span>03</span><strong>Authorization</strong></div>
-            </div>
-
-            <div className="ns-matrix-actions">
-              {(selected.status === "Training" || selected.status === "Expired") && <button onClick={() => navigateTo("Training Assignments")}>{selectedGuidance.action} <ArrowRight size={15} /></button>}
-              {selected.status === "Supervised" && <button onClick={() => navigateTo("Competency Signoff")}>{selectedGuidance.action} <ArrowRight size={15} /></button>}
-              {(selected.status === "Qualified" || selected.status === "N/A") && <button onClick={() => navigateTo("Document Library")}>{selectedGuidance.action} <ArrowRight size={15} /></button>}
-              <a href="/executive-intelligence">View executive rollup <ArrowRight size={15} /></a>
+            <div className="wr-modal-actions">
+              <button onClick={() => { setSelected(null); clickWorkspaceTab("Training Assignments"); }}><GraduationCap size={15} /> Open training</button>
+              <button onClick={() => { setSelected(null); clickWorkspaceTab("Competency Signoff"); }}><ShieldCheck size={15} /> Competency signoff</button>
+              <a href="/executive-intelligence">Executive rollup <ArrowRight size={15} /></a>
             </div>
           </aside>
         </div>
       )}
 
       <style jsx global>{`
-        .wr-matrix-enhanced {
-          position: relative;
-          padding: 12px;
-          border-color: #315778 !important;
-          background:
-            radial-gradient(circle at 92% 0%, rgba(69,207,255,.16), transparent 30%),
-            linear-gradient(180deg, #07192d, #0a2744) !important;
-          box-shadow: 0 24px 55px rgba(5,29,52,.25) !important;
-        }
-
-        .wr-matrix-enhanced::before {
-          content: "LIVE CAPABILITY MAP";
-          display: block;
-          margin: 2px 4px 12px;
-          color: #8ecbff;
-          font-size: 8px;
-          font-weight: 900;
-          letter-spacing: .16em;
-        }
-
-        .wr-matrix-enhanced .wr-matrix {
-          border-collapse: separate;
-          border-spacing: 0 7px;
-          color: #eaf4ff;
-        }
-
-        .wr-matrix-enhanced .wr-matrix thead th {
-          position: sticky;
-          top: 0;
-          z-index: 4;
-          border: 0;
-          color: #a9c9e4;
-          background: #0a223b;
-          box-shadow: inset 0 -1px 0 #31526d;
-        }
-
-        .wr-matrix-enhanced .wr-matrix thead th:first-child {
-          left: 0;
-          z-index: 6;
-          border-radius: 10px 0 0 10px;
-        }
-
-        .wr-matrix-enhanced .wr-matrix tbody tr {
-          opacity: 0;
-          animation: nsMatrixRowIn 420ms var(--ns-ease-emphasis, cubic-bezier(.16,1,.3,1)) var(--matrix-row-delay) forwards;
-        }
-
-        .wr-matrix-enhanced .wr-matrix td {
-          border-top: 1px solid rgba(92,133,169,.28);
-          border-bottom: 1px solid rgba(92,133,169,.28);
-          background: rgba(10,34,59,.82);
-          transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-        }
-
-        .wr-matrix-enhanced .wr-matrix td:first-child {
-          left: 0;
-          z-index: 3;
-          min-width: 190px;
-          border-left: 1px solid rgba(92,133,169,.28);
-          border-radius: 12px 0 0 12px;
-          color: #f5f9fd;
-          background: #0b2845;
-          box-shadow: 8px 0 18px rgba(3,19,34,.18);
-        }
-
-        .wr-matrix-enhanced .wr-matrix td:last-child {
-          border-right: 1px solid rgba(92,133,169,.28);
-          border-radius: 0 12px 12px 0;
-        }
-
-        .wr-matrix-enhanced .wr-matrix td:first-child small {
-          color: #8fa9bf;
-        }
-
-        .wr-matrix-interactive-cell {
-          position: relative;
-          cursor: pointer;
-        }
-
-        .wr-matrix-interactive-cell .wr-cell {
-          position: relative;
-          width: 38px;
-          height: 38px;
-          border: 1px solid currentColor;
-          border-radius: 11px;
-          box-shadow: 0 8px 20px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.28);
-          opacity: 0;
-          transform: translateY(8px) scale(.9);
-          animation: nsMatrixCellIn 420ms var(--ns-ease-emphasis, cubic-bezier(.16,1,.3,1)) var(--matrix-delay) forwards;
-          transition: transform 180ms var(--ns-ease-standard, ease), box-shadow 180ms ease, filter 180ms ease;
-        }
-
-        .wr-matrix-interactive-cell:hover .wr-cell,
-        .wr-matrix-interactive-cell:focus-visible .wr-cell,
-        .wr-matrix-interactive-cell.is-selected-cell .wr-cell {
-          transform: translateY(-3px) scale(1.13);
-          filter: saturate(1.12);
-          box-shadow: 0 14px 30px rgba(0,0,0,.28), 0 0 0 4px rgba(80,181,255,.14);
-        }
-
-        .wr-matrix-enhanced .wr-matrix tr.is-row-focus td,
-        .wr-matrix-enhanced .wr-matrix .is-column-focus {
-          background: rgba(18,63,101,.95);
-          border-color: rgba(99,185,255,.55);
-        }
-
-        .wr-matrix-interactive-cell[data-matrix-status="Qualified"] .wr-cell {
-          color: #a8f0ca !important;
-          background: rgba(33,151,94,.24) !important;
-        }
-
-        .wr-matrix-interactive-cell[data-matrix-status="Training"] .wr-cell {
-          color: #ffe0a0 !important;
-          background: rgba(190,125,17,.27) !important;
-        }
-
-        .wr-matrix-interactive-cell[data-matrix-status="Expired"] .wr-cell {
-          color: #ffb2bc !important;
-          background: rgba(185,54,72,.3) !important;
-          animation: nsMatrixCellIn 420ms var(--ns-ease-emphasis, cubic-bezier(.16,1,.3,1)) var(--matrix-delay) forwards, nsExpiredPulse 2.4s ease-in-out 1s infinite;
-        }
-
-        .wr-matrix-interactive-cell[data-matrix-status="Supervised"] .wr-cell {
-          color: #d2c7ff !important;
-          background: rgba(116,91,207,.28) !important;
-        }
-
-        .wr-matrix-interactive-cell[data-matrix-status="N/A"] .wr-cell {
-          color: #8ea3b8 !important;
-          background: rgba(92,115,137,.2) !important;
-          border-style: dashed;
-        }
-
-        .wr-matrix-enhanced + .wr-legend,
-        .wr-matrix-enhanced ~ .wr-legend {
-          padding: 11px 13px;
-          border: 1px solid #d3e1ec;
-          border-radius: 12px;
-          background: #f8fbfd;
-        }
-
-        .ns-matrix-backdrop {
-          position: fixed;
-          inset: 0;
-          z-index: 720;
-          display: flex;
-          justify-content: flex-end;
-          padding: 18px;
-          background: rgba(3,15,27,.62);
-          backdrop-filter: blur(8px);
-          animation: nsBackdropIn 180ms ease both;
-        }
-
-        .ns-matrix-drawer {
-          width: min(430px, 96vw);
-          height: 100%;
-          overflow: auto;
-          padding: 22px;
-          border: 1px solid #365b79;
-          border-radius: 22px;
-          color: #eaf4ff;
-          background: radial-gradient(circle at 100% 0%, rgba(69,207,255,.16), transparent 35%), linear-gradient(180deg,#07192d,#0a2744);
-          box-shadow: 0 35px 90px rgba(0,0,0,.44);
-          animation: nsDrawerIn 320ms var(--ns-ease-emphasis, cubic-bezier(.16,1,.3,1)) both;
-        }
-
-        .ns-matrix-drawer-head {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          padding-bottom: 17px;
-          border-bottom: 1px solid #31526d;
-        }
-
-        .ns-matrix-drawer-head > div { margin-right: auto; }
-        .ns-matrix-drawer-head small { color: #8ecbff; font-size: 8px; font-weight: 900; letter-spacing: .14em; }
-        .ns-matrix-drawer-head h2 { margin: 7px 0 3px; }
-        .ns-matrix-drawer-head p { margin: 0; color: #9eb6ca; font-size: 10px; }
-        .ns-matrix-drawer-head button { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #426482; border-radius: 10px; color: #fff; background: #102f50; }
-
-        .ns-matrix-status {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-top: 18px;
-          padding: 15px;
-          border: 1px solid #426482;
-          border-radius: 15px;
-          background: rgba(255,255,255,.05);
-        }
-
-        .ns-matrix-status > span { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 13px; color: #8ecbff; background: #0d3e68; }
-        .ns-matrix-status small,.ns-matrix-status strong { display: block; }
-        .ns-matrix-status small { color: #91aac0; font-size: 8px; text-transform: uppercase; }
-        .ns-matrix-status strong { margin-top: 5px; }
-        .ns-matrix-guidance { margin: 16px 0; color: #c5d7e6; font-size: 11px; line-height: 1.65; }
-
-        .ns-matrix-path {
-          display: grid;
-          grid-template-columns: 1fr auto 1fr auto 1fr;
-          gap: 8px;
-          align-items: center;
-          padding: 14px;
-          border: 1px solid #31526d;
-          border-radius: 15px;
-          background: rgba(3,17,30,.38);
-        }
-        .ns-matrix-path div { min-width: 0; }
-        .ns-matrix-path span,.ns-matrix-path strong { display: block; }
-        .ns-matrix-path span { color: #55cfff; font-size: 9px; font-weight: 900; }
-        .ns-matrix-path strong { margin-top: 4px; font-size: 9px; line-height: 1.35; }
-        .ns-matrix-path i { color: #55cfff; font-style: normal; }
-
-        .ns-matrix-actions { display: grid; gap: 9px; margin-top: 18px; }
-        .ns-matrix-actions button,.ns-matrix-actions a { min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #5fa8e8; border-radius: 11px; color: #fff; background: linear-gradient(135deg,#0d4a7c,#0a66ff); text-decoration: none; font-size: 10px; font-weight: 900; }
-        .ns-matrix-actions a { color: #dceeff; background: transparent; }
-
-        @keyframes nsMatrixRowIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes nsMatrixCellIn { to { opacity: 1; transform: translateY(0) scale(1); } }
-        @keyframes nsExpiredPulse { 0%,100% { box-shadow: 0 8px 20px rgba(0,0,0,.18); } 50% { box-shadow: 0 8px 20px rgba(0,0,0,.18), 0 0 0 5px rgba(255,102,117,.12); } }
-        @keyframes nsBackdropIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes nsDrawerIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
-
-        @media(max-width: 700px) {
-          .ns-matrix-backdrop { padding: 8px; }
-          .ns-matrix-path { grid-template-columns: 1fr; }
-          .ns-matrix-path i { transform: rotate(90deg); justify-self: center; }
-        }
+        .wr-restored-stack{display:grid;gap:16px;animation:wrRegisterIn 260ms var(--ns-ease-emphasis,cubic-bezier(.16,1,.3,1)) both}.wr-register-card{padding:18px;border:1px solid #d6e2eb;border-radius:18px;background:#fff;box-shadow:0 10px 28px rgba(24,53,77,.07)}.wr-register-heading{display:flex;align-items:flex-start;gap:14px;padding-bottom:13px;border-bottom:1px solid #dce6ee}.wr-register-heading>div{margin-right:auto}.wr-register-heading small{color:#5d7ea1;font-size:9px;font-weight:950;letter-spacing:.14em}.wr-register-heading h2{margin:5px 0 4px;color:#10263a;font-size:19px}.wr-register-heading p{margin:0;color:#647b8f;font-size:10px;line-height:1.55}.wr-register-heading>svg{color:#143a60}.wr-register-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}.wr-register-toolbar button,.wr-register-toolbar a{min-height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 11px;border:1px solid #c3d4e2;border-radius:9px;color:#153b5e;background:#fff;text-decoration:none;font-size:10px;font-weight:900;cursor:pointer}.wr-register-toolbar .primary{border-color:#0b59ca;color:#fff;background:#174fc2}.wr-register-filters{display:grid;grid-template-columns:minmax(320px,1fr) 165px 175px;gap:8px;margin-bottom:12px}.wr-register-filters label{display:flex;align-items:center;gap:7px;padding:0 10px;border:1px solid #c6d6e2;border-radius:9px;background:#fff}.wr-register-filters input{border:0!important;box-shadow:none!important;padding-left:0!important}.wr-register-filters select{min-height:34px;padding:0 9px;border:1px solid #c6d6e2;border-radius:9px;color:#183a59;background:#fff;font-size:10px}.wr-register-table-wrap{overflow:auto;border:1px solid #d2dfe9;border-radius:12px}.wr-register-table{width:100%;min-width:1040px;border-collapse:collapse}.wr-register-table th{padding:8px 9px;border-bottom:1px solid #cfdae5;color:#355675;background:#eef4f8;text-align:left;font-size:8px;font-weight:950;letter-spacing:.04em;text-transform:uppercase}.wr-register-table td{padding:8px 9px;border-bottom:1px solid #dbe4ec;color:#10263a;font-size:10px;vertical-align:middle}.wr-register-table tbody tr:last-child td{border-bottom:0}.wr-register-table tbody tr{transition:background 160ms ease}.wr-register-table tbody tr:hover{background:#f5f9fd}.wr-register-table td strong,.wr-register-table td small{display:block}.wr-register-table td strong{font-size:10px}.wr-register-table td small{margin-top:3px;color:#6a8094;font-size:8px}.wr-person-cell{display:flex;align-items:center;gap:9px}.wr-person-cell>span{width:32px;height:32px;display:grid;place-items:center;flex:0 0 auto;border-radius:9px;color:#fff;background:linear-gradient(135deg,#1661ee,#315cff)}.wr-register-badge{display:inline-flex!important;width:max-content;padding:4px 7px;border-radius:999px;font-size:7px!important;font-style:normal;font-weight:950;white-space:nowrap}.wr-register-actions{display:flex;gap:4px;white-space:nowrap}.wr-register-actions button{width:29px;height:29px;display:inline-grid;place-items:center;padding:0;border:1px solid #c9d9e5;border-radius:8px;color:#285677;background:#fff;cursor:pointer;transition:transform 150ms ease,border-color 150ms ease,background 150ms ease}.wr-register-actions button:hover{transform:translateY(-1px);border-color:#77a8d3;background:#eef6fd}.wr-register-table .is-overdue{color:#b31f35}.wr-control-table td{height:47px}.wr-register-modal-backdrop{position:fixed;inset:0;z-index:760;display:flex;justify-content:flex-end;padding:18px;background:rgba(5,18,31,.64);backdrop-filter:blur(7px);animation:wrBackdropIn 180ms ease both}.wr-register-modal{width:min(520px,96vw);height:100%;overflow:auto;padding:21px;border:1px solid #365b7a;border-radius:20px;color:#eaf4ff;background:radial-gradient(circle at 100% 0%,rgba(58,169,255,.17),transparent 32%),linear-gradient(180deg,#071a30,#0a2948);box-shadow:0 34px 90px rgba(0,0,0,.42);animation:wrDrawerIn 320ms var(--ns-ease-emphasis,cubic-bezier(.16,1,.3,1)) both}.wr-register-modal>header{display:flex;gap:12px;padding-bottom:16px;border-bottom:1px solid #31516d}.wr-register-modal>header>div{margin-right:auto}.wr-register-modal header small,.wr-modal-section-title small{color:#88c6fa;font-size:8px;font-weight:950;letter-spacing:.13em}.wr-register-modal h2{margin:6px 0 3px}.wr-register-modal header p{margin:0;color:#9fb6c9;font-size:9px}.wr-register-modal header button{width:36px;height:36px;display:grid;place-items:center;border:1px solid #426582;border-radius:9px;color:#fff;background:#102e4d}.wr-person-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0}.wr-person-summary>div{display:grid;gap:4px;padding:12px;border:1px solid #365a77;border-radius:12px;background:rgba(255,255,255,.045)}.wr-person-summary span{color:#78bdf6}.wr-person-summary small{color:#8ca7bd;font-size:8px}.wr-person-summary strong{font-size:10px}.wr-qualification-list{display:grid;gap:7px}.wr-modal-section-title{display:flex;align-items:center;gap:10px;margin-bottom:4px}.wr-modal-section-title>div{margin-right:auto}.wr-modal-section-title h3{margin:4px 0 0}.wr-qualification-list>div:not(.wr-modal-section-title){display:grid;grid-template-columns:34px 1fr auto;gap:9px;align-items:center;padding:10px;border:1px solid #31526d;border-radius:11px;background:rgba(255,255,255,.035)}.wr-qualification-list strong,.wr-qualification-list small{display:block}.wr-qualification-list strong{font-size:10px}.wr-qualification-list small{margin-top:3px;color:#92aabd;font-size:8px;line-height:1.45}.wr-skill-icon{width:32px;height:32px;display:grid;place-items:center;border-radius:9px}.wr-modal-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px;padding-top:15px;border-top:1px solid #31516d}.wr-modal-actions button,.wr-modal-actions a{min-height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:1px solid #4e7392;border-radius:9px;color:#fff;background:#123b63;text-decoration:none;font-size:9px;font-weight:900}.wr-modal-actions a{margin-left:auto;background:#1764c5}@keyframes wrRegisterIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes wrBackdropIn{from{opacity:0}to{opacity:1}}@keyframes wrDrawerIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}@media(max-width:900px){.wr-register-filters{grid-template-columns:1fr}.wr-person-summary{grid-template-columns:1fr}.wr-register-modal-backdrop{padding:8px}}@media(prefers-reduced-motion:reduce){.wr-restored-stack,.wr-register-modal-backdrop,.wr-register-modal{animation:none!important}.wr-register-actions button{transition:none!important}}
       `}</style>
-    </>
+    </>,
+    portalTarget,
   );
 }
