@@ -2,345 +2,359 @@
 
 import {
   AlertTriangle,
-  ArrowLeft,
+  ArrowRight,
   BadgeCheck,
   BarChart3,
+  BookOpenCheck,
   CheckCircle2,
-  Copy,
+  ChevronRight,
+  ClipboardCheck,
   Download,
-  FileDown,
-  FileSpreadsheet,
+  FileCheck2,
+  FileClock,
+  FilePlus2,
   GraduationCap,
-  History,
-  Pencil,
+  LayoutDashboard,
   Plus,
-  Printer,
-  RotateCcw,
+  QrCode,
   Save,
+  Search,
   Send,
   ShieldCheck,
   Sparkles,
-  Target,
-  Trash2,
-  Upload,
-  UploadCloud,
   UserRoundCheck,
-  UserRoundX,
   Users,
-  X,
+  Wrench,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useCloudWorkspace } from "@/components/cloud-workspace";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useMemo, useState } from "react";
+import { NORTHSTAR_LOGO_DATA_URI, QMSPILOT_LOGO_DATA_URI } from "@/lib/northstar-brand-assets";
 
-const QMS_LOGO = "data:image/webp;base64,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";
-const NORTHSTAR_LOGO = "data:image/webp;base64,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";
+const STORAGE_KEY = "qmspilot:northstar:workforce-readiness-workspace";
+const SUMMARY_KEY = "qmspilot:northstar:workforce-readiness-summary";
 
-const draftKey = "qmspilot:workforce-readiness:draft";
-const recordsKey = "qmspilot:workforce-readiness:records";
-const levels = [0, 1, 2, 3, 4, 5];
-const levelMeta = {
-  0: { label: "Not assigned", status: "not_assigned" },
-  1: { label: "Training required", status: "training_required" },
-  2: { label: "In training", status: "in_training" },
-  3: { label: "Qualified with supervision", status: "qualified_supervised" },
-  4: { label: "Fully qualified", status: "fully_qualified" },
-  5: { label: "Trainer / subject-matter expert", status: "trainer" },
-};
-const capabilities = [
-  { key: "cnc", name: "CNC setup & operation", category: "Production", critical: true },
-  { key: "press", name: "Pressing & fit verification", category: "Production", critical: true },
-  { key: "inspection", name: "Final inspection release", category: "Quality", critical: true },
-  { key: "measurement", name: "Precision measurement", category: "Quality", critical: true },
-  { key: "shipping", name: "Shipping verification", category: "Fulfillment", critical: false },
-  { key: "forklift", name: "Forklift authorization", category: "Safety", critical: false },
+const initialDocuments = [
+  { id: "WI-ASM-006", title: "Fan Motor Assembly", type: "Work Instruction", department: "Operations", workCenter: "Final Assembly", revision: "B", owner: "Manufacturing Engineering", status: "Active", training: "Practical demonstration", review: "2027-02-01" },
+  { id: "WI-TEST-014", title: "Electrical Functional Test", type: "Work Instruction", department: "Quality", workCenter: "Electrical Test", revision: "C", owner: "Quality Engineering", status: "Under Review", training: "Competency revalidation", review: "2027-01-15" },
+  { id: "WI-FOAM-009", title: "Foam Fixture Setup", type: "Work Instruction", department: "Operations", workCenter: "Foam Operations", revision: "D", owner: "Process Engineering", status: "Under Review", training: "Awareness + observation", review: "2027-03-10" },
+  { id: "SOP-OPS-003", title: "Production Startup and Shutdown", type: "SOP", department: "Operations", workCenter: "All Operations", revision: "B", owner: "Operations Manager", status: "Under Review", training: "Awareness", review: "2027-04-01" },
+  { id: "SOP-QA-002", title: "Final Inspection Control", type: "SOP", department: "Quality", workCenter: "Final Inspection", revision: "A", owner: "Quality Manager", status: "Active", training: "Practical demonstration", review: "2026-11-18" },
+  { id: "WI-PKG-004", title: "Finished Product Packaging", type: "Work Instruction", department: "Operations", workCenter: "Packaging", revision: "C", owner: "Packaging Lead", status: "Active", training: "Practical demonstration", review: "2027-05-09" },
 ];
 
-function blankQualification(level = 0) {
-  return { level, evaluator: "", effectiveDate: "", reviewDate: "", restriction: "", evidenceNote: "", evidenceNames: [] };
-}
-function blankQualifications() {
-  return Object.fromEntries(capabilities.map((capability) => [capability.key, blankQualification()]));
-}
-function blankPerson() {
-  return { id: "", employeeCode: "", name: "", department: "", role: "", shift: "Day", supervisor: "", hireDate: "", status: "active", photoName: "", photoDataUrl: "", qualifications: blankQualifications(), history: [] };
-}
-function today() { return new Date().toISOString().slice(0, 10); }
-function dateFromToday(days) { const date = new Date(); date.setDate(date.getDate() + days); return date.toISOString().slice(0, 10); }
-function createRecordId() { const date = new Date(); const stamp = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`; return `NWR-${stamp}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`; }
-function deepClone(value) { return JSON.parse(JSON.stringify(value)); }
-function initials(name) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "TM"; }
-function normalizeHeader(value) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, ""); }
+const initialAssignments = [
+  { id: 1, employee: "Maria Torres", role: "Assembly Technician", document: "WI-ASM-006 Rev B", requirement: "Practical demonstration", due: "Aug 6", status: "Viewed" },
+  { id: 2, employee: "Andre Lewis", role: "Test Technician", document: "WI-TEST-014 Rev C", requirement: "Revalidation", due: "Aug 8", status: "Assigned" },
+  { id: 3, employee: "James Cole", role: "Test Technician", document: "WI-TEST-014 Rev C", requirement: "Revalidation", due: "Aug 8", status: "Assigned" },
+  { id: 4, employee: "Sofia Reed", role: "Foam Operator", document: "WI-FOAM-009 Rev D", requirement: "Awareness + observation", due: "Aug 9", status: "Assigned" },
+  { id: 5, employee: "Caleb Young", role: "Foam Operator", document: "WI-FOAM-009 Rev D", requirement: "Awareness + observation", due: "Aug 9", status: "In Progress" },
+  { id: 6, employee: "Emily Chen", role: "Quality Technician", document: "SOP-QA-002 Rev A", requirement: "Practical demonstration", due: "Aug 11", status: "Complete" },
+  { id: 7, employee: "Marcus Hill", role: "Assembly Lead", document: "SOP-OPS-003 Rev B", requirement: "Awareness", due: "Aug 12", status: "Assigned" },
+];
 
-function parseDelimited(text) {
-  const rows = [];
-  const delimiter = text.includes("\t") ? "\t" : ",";
-  let row = [], cell = "", quoted = false;
-  for (let i = 0; i < text.length; i += 1) {
-    const character = text[i];
-    if (character === '"') {
-      if (quoted && text[i + 1] === '"') { cell += '"'; i += 1; }
-      else quoted = !quoted;
-    } else if (character === delimiter && !quoted) {
-      row.push(cell.trim()); cell = "";
-    } else if ((character === "\n" || character === "\r") && !quoted) {
-      if (character === "\r" && text[i + 1] === "\n") i += 1;
-      row.push(cell.trim());
-      if (row.some((value) => value !== "")) rows.push(row);
-      row = []; cell = "";
-    } else cell += character;
-  }
-  row.push(cell.trim());
-  if (row.some((value) => value !== "")) rows.push(row);
-  return rows;
-}
+const matrixRows = [
+  { name: "Maria Torres", role: "Assembly Technician", skills: ["Training", "N/A", "N/A", "Supervised", "Qualified"] },
+  { name: "Andre Lewis", role: "Test Technician", skills: ["Qualified", "Expired", "N/A", "Qualified", "Qualified"] },
+  { name: "James Cole", role: "Test Technician", skills: ["Qualified", "Expired", "N/A", "Qualified", "Qualified"] },
+  { name: "Sofia Reed", role: "Foam Operator", skills: ["N/A", "N/A", "Training", "Supervised", "Qualified"] },
+  { name: "Caleb Young", role: "Foam Operator", skills: ["N/A", "N/A", "Qualified", "Supervised", "Qualified"] },
+  { name: "Emily Chen", role: "Quality Technician", skills: ["Supervised", "Qualified", "N/A", "Qualified", "Qualified"] },
+];
 
-function demoPeople() {
-  const seed = [
-    ["EMP-101", "Maria Torres", "Operations", "Senior Technician", "Day", "Operations Manager", "2021-03-15", [5,5,3,4,4,4]],
-    ["EMP-102", "James Cole", "Operations", "Machinist", "Day", "Operations Manager", "2022-08-08", [4,2,1,3,3,4]],
-    ["EMP-103", "Alicia Reed", "Quality", "Quality Inspector", "Day", "Quality Manager", "2020-11-02", [1,2,5,5,3,3]],
-    ["EMP-104", "Marcus Hill", "Operations", "Technician", "Night", "Night Supervisor", "2024-01-22", [3,4,1,2,2,4]],
-    ["EMP-105", "Emily Chen", "Quality", "Quality Technician", "Night", "Quality Manager", "2023-06-19", [1,1,4,4,2,3]],
-    ["EMP-106", "Derek Owens", "Logistics", "Shipping Specialist", "Day", "Logistics Manager", "2022-04-04", [0,0,2,2,5,5]],
-  ];
-  return seed.map((item, index) => {
-    const qualifications = Object.fromEntries(capabilities.map((capability, capabilityIndex) => [capability.key, blankQualification(item[7][capabilityIndex])]));
-    return { id: `demo-${index + 1}`, employeeCode: item[0], name: item[1], department: item[2], role: item[3], shift: item[4], supervisor: item[5], hireDate: item[6], status: "active", photoName: "", photoDataUrl: "", qualifications, history: [{ id: crypto.randomUUID(), date: today(), type: "Roster", detail: "Design-partner qualification profile loaded.", actor: "Northstar Demo" }] };
-  });
+const tabs = [
+  ["dashboard", "Executive Dashboard", LayoutDashboard],
+  ["library", "Document Library", BookOpenCheck],
+  ["builder", "Instruction Builder", FilePlus2],
+  ["approvals", "Approvals & Revisions", FileClock],
+  ["training", "Training Assignments", GraduationCap],
+  ["competency", "Competency Signoff", UserRoundCheck],
+  ["matrix", "Readiness Matrix", BarChart3],
+  ["shopfloor", "Shop-Floor Access", QrCode],
+];
+
+function statusClass(value) {
+  if (["Active", "Complete", "Qualified", "Approved"].includes(value)) return "good";
+  if (["Under Review", "Viewed", "In Progress", "Training", "Supervised"].includes(value)) return "warn";
+  if (["Expired"].includes(value)) return "bad";
+  return "blue";
 }
 
 export default function WorkforceReadinessApp() {
-  const cloud = useCloudWorkspace();
-  const qualificationRef = useRef(null);
-  const [setup, setSetup] = useState({ organization: "QMSPilot Design Partner", site: "", readinessOwner: "", planningHorizon: "90 days", leadershipIntent: "Build qualified coverage for every critical process without relying on a single individual." });
-  const [people, setPeople] = useState([]);
-  const [selection, setSelection] = useState(null);
-  const [recordId, setRecordId] = useState("");
+  const [tab, setTab] = useState("dashboard");
+  const [documents, setDocuments] = useState(initialDocuments);
+  const [assignments, setAssignments] = useState(initialAssignments);
+  const [authorizedCount, setAuthorizedCount] = useState(22);
+  const [expiredCount, setExpiredCount] = useState(2);
+  const [query, setQuery] = useState("");
+  const [department, setDepartment] = useState("All");
   const [notice, setNotice] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [personModal, setPersonModal] = useState(false);
-  const [personForm, setPersonForm] = useState(blankPerson());
-  const [importModal, setImportModal] = useState(false);
-  const [importText, setImportText] = useState("");
-  const [historyPerson, setHistoryPerson] = useState(null);
-  const [search, setSearch] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [evaluation, setEvaluation] = useState(null);
+  const [builder, setBuilder] = useState({ id: "", title: "", type: "Work Instruction", department: "Operations", workCenter: "", purpose: "", role: "Assembly Technician" });
+  const [steps, setSteps] = useState([{ instruction: "", tool: "", safety: "", quality: "", result: "" }]);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(draftKey);
-    if (!saved) return;
     try {
-      const draft = JSON.parse(saved);
-      if (draft.setup) setSetup(draft.setup);
-      if (Array.isArray(draft.people)) setPeople(draft.people);
-      if (draft.recordId) setRecordId(draft.recordId);
-      setNotice("Saved Workforce Readiness draft restored.");
-    } catch { window.localStorage.removeItem(draftKey); }
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (!saved) return;
+      if (Array.isArray(saved.documents)) setDocuments(saved.documents);
+      if (Array.isArray(saved.assignments)) setAssignments(saved.assignments);
+      if (Number.isFinite(saved.authorizedCount)) setAuthorizedCount(saved.authorizedCount);
+      if (Number.isFinite(saved.expiredCount)) setExpiredCount(saved.expiredCount);
+    } catch {}
   }, []);
 
-  const departments = useMemo(() => [...new Set(people.map((person) => person.department).filter(Boolean))].sort(), [people]);
-  const filteredPeople = useMemo(() => people.filter((person) => {
-    const matchesSearch = `${person.name} ${person.employeeCode} ${person.role} ${person.supervisor}`.toLowerCase().includes(search.toLowerCase());
-    const matchesDepartment = departmentFilter === "all" || person.department === departmentFilter;
-    const matchesStatus = statusFilter === "all" || person.status === statusFilter;
-    return matchesSearch && matchesDepartment && matchesStatus;
-  }), [people, search, departmentFilter, statusFilter]);
+  const readiness = Math.round((authorizedCount / 24) * 100);
+  const activeDocuments = documents.filter((item) => item.status === "Active").length;
+  const awaitingApproval = documents.filter((item) => item.status === "Under Review").length;
+  const trainingRequired = assignments.filter((item) => item.status !== "Complete").length;
 
-  const metrics = useMemo(() => {
-    const active = people.filter((person) => person.status === "active");
-    const qualifications = active.flatMap((person) => capabilities.map((capability) => ({ person, capability, qualification: person.qualifications[capability.key] || blankQualification() })));
-    const readinessScore = qualifications.length ? Math.round((qualifications.reduce((sum, item) => sum + item.qualification.level, 0) / (qualifications.length * 5)) * 100) : 0;
-    const criticalCoverage = capabilities.filter((capability) => capability.critical).map((capability) => ({ capability, qualified: active.filter((person) => (person.qualifications[capability.key]?.level || 0) >= 4) }));
-    const criticalGaps = criticalCoverage.filter((item) => item.qualified.length < 2);
-    const singlePointDependencies = criticalCoverage.filter((item) => item.qualified.length === 1);
-    const inTraining = qualifications.filter((item) => item.qualification.level === 2).length;
-    const expiring = qualifications.filter((item) => item.qualification.reviewDate && (new Date(item.qualification.reviewDate).getTime() - Date.now()) / 86400000 >= 0 && (new Date(item.qualification.reviewDate).getTime() - Date.now()) / 86400000 <= 90).length;
-    const trainers = qualifications.filter((item) => item.qualification.level === 5).length;
-    const fullyQualified = qualifications.filter((item) => item.qualification.level >= 4).length;
-    return { active, readinessScore, criticalGaps, singlePointDependencies, inTraining, expiring, trainers, fullyQualified };
-  }, [people]);
+  const summary = useMemo(() => ({
+    company: "Davicorp",
+    readinessPercent: readiness,
+    activeDocuments,
+    awaitingApproval,
+    trainingRequired,
+    fullyAuthorized: authorizedCount,
+    totalEmployees: 24,
+    expiredQualifications: expiredCount,
+    criticalGaps: expiredCount,
+    workCenters: [
+      { name: "Final Assembly", readiness: 96 },
+      { name: "Foam Operations", readiness: 91 },
+      { name: "Electrical Test", readiness: expiredCount ? 88 : 96 },
+      { name: "Packaging", readiness: 100 },
+    ],
+    source: "Controlled Work Instructions & Workforce Readiness",
+    sourcePath: "/tools/workforce-readiness",
+    updatedAt: new Date().toISOString(),
+  }), [readiness, activeDocuments, awaitingApproval, trainingRequired, authorizedCount, expiredCount]);
 
-  const selected = useMemo(() => {
-    if (!selection) return null;
-    const person = people.find((item) => item.id === selection.personId);
-    const capability = capabilities.find((item) => item.key === selection.capabilityKey);
-    if (!person || !capability) return null;
-    return { person, capability, qualification: person.qualifications[capability.key] || blankQualification() };
-  }, [people, selection]);
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ documents, assignments, authorizedCount, expiredCount }));
+    localStorage.setItem(SUMMARY_KEY, JSON.stringify(summary));
+    window.dispatchEvent(new CustomEvent("qmspilot:workforce-readiness-updated", { detail: summary }));
+  }, [documents, assignments, authorizedCount, expiredCount, summary]);
 
-  const recommendations = useMemo(() => metrics.criticalGaps.map((gap) => {
-    const candidate = metrics.active.filter((person) => (person.qualifications[gap.capability.key]?.level || 0) < 4).sort((a, b) => (b.qualifications[gap.capability.key]?.level || 0) - (a.qualifications[gap.capability.key]?.level || 0))[0];
-    return { capability: gap.capability.name, coverage: gap.qualified.length, candidate: candidate?.name || "Assign candidate", currentLevel: candidate?.qualifications[gap.capability.key]?.level || 0, priority: gap.qualified.length === 0 ? "Critical" : "High" };
-  }), [metrics]);
+  const filteredDocuments = documents.filter((item) => {
+    const matchesQuery = `${item.id} ${item.title} ${item.workCenter} ${item.owner}`.toLowerCase().includes(query.toLowerCase());
+    return matchesQuery && (department === "All" || item.department === department);
+  });
 
-  function openNewPerson(template = null) {
-    const next = template ? { ...deepClone(template), id: "", employeeCode: "", name: "", photoDataUrl: "", photoName: "", status: "active", history: [{ id: crypto.randomUUID(), date: today(), type: "Profile", detail: `Qualification profile duplicated from ${template.name}.`, actor: "Authorized user" }] } : blankPerson();
-    setPersonForm(next); setPersonModal(true);
-  }
-  function editPerson(person) { setPersonForm(deepClone(person)); setPersonModal(true); }
-  function savePerson() {
-    if (!personForm.name.trim() || !personForm.employeeCode.trim() || !personForm.department.trim() || !personForm.role.trim()) { setNotice("Employee name, ID, department, and role are required."); return; }
-    const duplicate = people.some((person) => person.employeeCode.toLowerCase() === personForm.employeeCode.toLowerCase() && person.id !== personForm.id);
-    if (duplicate) { setNotice("Employee ID must be unique."); return; }
-    const nowEvent = { id: crypto.randomUUID(), date: new Date().toISOString(), type: personForm.id ? "Roster update" : "Roster creation", detail: personForm.id ? "Team member profile updated." : "Team member added to Workforce Readiness.", actor: setup.readinessOwner || "Authorized user" };
-    const saved = { ...personForm, id: personForm.id || crypto.randomUUID(), qualifications: personForm.qualifications || blankQualifications(), history: [nowEvent, ...(personForm.history || [])] };
-    setPeople((current) => personForm.id ? current.map((person) => person.id === personForm.id ? saved : person) : [...current, saved]);
-    setPersonModal(false); setSubmitted(false); setNotice(`${saved.name} saved to the team roster.`);
-  }
-  function setPersonStatus(person, status) {
-    setPeople((current) => current.map((item) => item.id === person.id ? { ...item, status, history: [{ id: crypto.randomUUID(), date: new Date().toISOString(), type: "Status", detail: `Employment status changed to ${status}.`, actor: setup.readinessOwner || "Authorized user" }, ...(item.history || [])] } : item));
-    setSubmitted(false); setNotice(`${person.name} is now ${status}.`);
-  }
-  function deletePerson(person) {
-    if (!window.confirm(`Permanently remove ${person.name} from this assessment?`)) return;
-    setPeople((current) => current.filter((item) => item.id !== person.id));
-    if (selection?.personId === person.id) setSelection(null);
-    setNotice(`${person.name} removed from this assessment.`); setSubmitted(false);
-  }
-  function openQualification(person) {
-    setSelection({ personId: person.id, capabilityKey: capabilities[0].key });
-    setTimeout(() => qualificationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
-  }
-  function updateQualification(personId, capabilityKey, patch) {
-    setPeople((current) => current.map((person) => {
-      if (person.id !== personId) return person;
-      const before = person.qualifications[capabilityKey] || blankQualification();
-      const after = { ...before, ...patch };
-      const changedLevel = patch.level !== undefined && patch.level !== before.level;
-      const history = changedLevel ? [{ id: crypto.randomUUID(), date: new Date().toISOString(), type: "Qualification", detail: `${capabilities.find((item) => item.key === capabilityKey)?.name}: level ${before.level} to ${after.level}.`, actor: after.evaluator || setup.readinessOwner || "Authorized evaluator" }, ...(person.history || [])] : person.history;
-      return { ...person, qualifications: { ...person.qualifications, [capabilityKey]: after }, history };
-    }));
-    setSubmitted(false);
-  }
-  function attachEvidence(event) {
-    if (!selected) return;
-    updateQualification(selected.person.id, selected.capability.key, { evidenceNames: Array.from(event.target.files || []).map((file) => file.name) });
-  }
-  function handlePhoto(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { setNotice("Team-member photos must be 2 MB or smaller."); return; }
-    const reader = new FileReader();
-    reader.onload = () => setPersonForm((current) => ({ ...current, photoName: file.name, photoDataUrl: String(reader.result || "") }));
-    reader.readAsDataURL(file);
-  }
+  const flash = (message) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(""), 2800);
+  };
 
-  function loadDemo() {
-    const demo = demoPeople();
-    demo[0].qualifications.press.reviewDate = dateFromToday(42);
-    demo[2].qualifications.inspection.reviewDate = dateFromToday(75);
-    setSetup({ organization: "Northstar Precision Systems", site: "Lufkin Operations", readinessOwner: "Director of Operations", planningHorizon: "90 days", leadershipIntent: "Protect customer delivery by eliminating single-person dependencies in final inspection, precision measurement, and pressing operations." });
-    setPeople(demo); setSelection({ personId: demo[0].id, capabilityKey: capabilities[0].key }); setRecordId(""); setSubmitted(false); setNotice("Design-partner Workforce Readiness demonstration loaded.");
-  }
-  function saveDraft() { window.localStorage.setItem(draftKey, JSON.stringify({ setup, people, recordId })); setNotice("Workforce Readiness draft saved on this device."); }
-  function clearTool() {
-    if (people.length && !window.confirm("Start a new assessment and clear the current roster from this device?")) return;
-    setSetup({ organization: "QMSPilot Design Partner", site: "", readinessOwner: "", planningHorizon: "90 days", leadershipIntent: "Build qualified coverage for every critical process without relying on a single individual." });
-    setPeople([]); setSelection(null); setRecordId(""); setSubmitted(false); setNotice("New Workforce Readiness assessment started."); window.localStorage.removeItem(draftKey);
-  }
-  function downloadTemplate() {
-    const csv = "employeeCode,name,department,role,shift,supervisor,hireDate,status\nEMP-001,Employee Name,Operations,Technician,Day,Supervisor Name,2026-01-15,active\n";
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    const anchor = document.createElement("a"); anchor.href = url; anchor.download = "Northstar_Workforce_Roster_Template.csv"; anchor.click(); URL.revokeObjectURL(url);
-  }
-  function readImportFile(event) {
-    const file = event.target.files?.[0]; if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".csv") && !file.name.toLowerCase().endsWith(".txt")) { setNotice("For Excel, save the sheet as CSV or paste the rows directly from Excel into the import window."); return; }
-    const reader = new FileReader(); reader.onload = () => setImportText(String(reader.result || "")); reader.readAsText(file);
-  }
-  function importRoster() {
-    const rows = parseDelimited(importText);
-    if (rows.length < 2) { setNotice("No roster rows were found. Use the template headers or paste rows copied from Excel."); return; }
-    const headers = rows[0].map(normalizeHeader);
-    const aliases = { employeecode: ["employeecode", "employeeid", "id", "personnelnumber"], name: ["name", "employeename", "fullname"], department: ["department", "dept"], role: ["role", "jobtitle", "title", "position"], shift: ["shift"], supervisor: ["supervisor", "manager", "lead"], hiredate: ["hiredate", "startdate"], status: ["status", "employmentstatus"] };
-    const indexFor = (key) => headers.findIndex((header) => aliases[key].includes(header));
-    const required = ["employeecode", "name", "department", "role"];
-    if (required.some((key) => indexFor(key) < 0)) { setNotice("Import requires employeeCode, name, department, and role columns."); return; }
-    let added = 0, updated = 0;
-    setPeople((current) => {
-      const next = deepClone(current);
-      rows.slice(1).forEach((row) => {
-        const value = (key, fallback = "") => { const index = indexFor(key); return index >= 0 ? String(row[index] || "").trim() : fallback; };
-        const employeeCode = value("employeecode"); const name = value("name");
-        if (!employeeCode || !name) return;
-        const existingIndex = next.findIndex((person) => person.employeeCode.toLowerCase() === employeeCode.toLowerCase());
-        const patch = { employeeCode, name, department: value("department"), role: value("role"), shift: value("shift", "Day") || "Day", supervisor: value("supervisor"), hireDate: value("hiredate"), status: ["active", "leave", "inactive"].includes(value("status", "active").toLowerCase()) ? value("status", "active").toLowerCase() : "active" };
-        if (existingIndex >= 0) { next[existingIndex] = { ...next[existingIndex], ...patch, history: [{ id: crypto.randomUUID(), date: new Date().toISOString(), type: "Import", detail: "Roster fields updated by Excel/CSV import.", actor: setup.readinessOwner || "Authorized user" }, ...(next[existingIndex].history || [])] }; updated += 1; }
-        else { next.push({ ...blankPerson(), ...patch, id: crypto.randomUUID(), history: [{ id: crypto.randomUUID(), date: new Date().toISOString(), type: "Import", detail: "Team member created by Excel/CSV import.", actor: setup.readinessOwner || "Authorized user" }] }); added += 1; }
-      });
-      return next;
-    });
-    setImportModal(false); setImportText(""); setSubmitted(false); setNotice(`Roster import complete: ${added} added, ${updated} updated.`);
-  }
+  const approveDocument = (id) => {
+    setDocuments((current) => current.map((item) => item.id === id ? { ...item, status: "Active" } : item));
+    flash(`${id} approved. Training-impacting release routed to Davicorp employees.`);
+  };
 
-  function buildPayload(id) {
-    return { schema: "qmspilot.northstar.workforce-readiness.v2", recordId: id, toolId: "QMSP-WR-001", version: "2.0.0", submittedAt: new Date().toISOString(), setup, metrics: { readinessScore: metrics.readinessScore, criticalSkillGaps: metrics.criticalGaps.length, singlePointDependencies: metrics.singlePointDependencies.length, expiringQualifications: metrics.expiring, trainingInProgress: metrics.inTraining, fullyQualifiedAssignments: metrics.fullyQualified, trainers: metrics.trainers, activePeople: metrics.active.length }, capabilities, people, recommendations, governance: { humanQualificationAuthority: true, objectiveEvidenceRequired: true, rosterTraceability: true, source: "Northstar Workforce Readiness" } };
-  }
-  async function submitToNorthstar() {
-    if (!setup.organization.trim() || !setup.site.trim() || !setup.readinessOwner.trim()) { setNotice("Complete organization, site, and readiness owner before submission."); return; }
-    if (!people.length) { setNotice("Add or import team members before submission."); return; }
-    setSaving(true); const id = recordId || createRecordId(); const payload = buildPayload(id);
-    try {
-      const records = JSON.parse(window.localStorage.getItem(recordsKey) || "[]"); window.localStorage.setItem(recordsKey, JSON.stringify([payload, ...records].slice(0, 50))); window.localStorage.removeItem(draftKey);
-      if (cloud.status === "ready" && cloud.organizationId && cloud.user) {
-        const supabase = createClient(); if (!supabase) throw new Error("Northstar Secure cloud is unavailable.");
-        const { data: snapshot, error: snapshotError } = await supabase.from("workforce_readiness_snapshots").upsert({ record_id: id, organization_id: cloud.organizationId, created_by: cloud.user.id, organization_name: setup.organization || cloud.organizationName, site: setup.site, readiness_score: metrics.readinessScore, critical_skill_gaps: metrics.criticalGaps.length, single_point_dependencies: metrics.singlePointDependencies.length, expiring_qualifications: metrics.expiring, training_in_progress: metrics.inTraining, payload, submitted_at: payload.submittedAt, updated_at: new Date().toISOString() }, { onConflict: "record_id" }).select("id").single();
-        if (snapshotError) throw snapshotError; if (!snapshot?.id) throw new Error("Northstar did not return the Workforce Readiness record ID.");
-        const personRows = people.map((person) => ({ organization_id: cloud.organizationId, snapshot_id: snapshot.id, employee_code: person.employeeCode, full_name: person.name, department: person.department, role_name: person.role, shift_name: person.shift, supervisor_name: person.supervisor, employment_status: person.status, hire_date: person.hireDate || null, photo_name: person.photoName || "", history: person.history || [], created_by: cloud.user.id, updated_at: new Date().toISOString() }));
-        const { data: savedPeople, error: peopleError } = await supabase.from("workforce_readiness_people").upsert(personRows, { onConflict: "snapshot_id,employee_code" }).select("id, employee_code");
-        if (peopleError) throw peopleError;
-        const personIds = new Map((savedPeople || []).map((person) => [person.employee_code, person.id]));
-        const qualificationRows = people.flatMap((person) => capabilities.map((capability) => { const qualification = person.qualifications[capability.key] || blankQualification(); const personId = personIds.get(person.employeeCode); if (!personId) throw new Error(`Northstar could not resolve ${person.employeeCode}.`); return { organization_id: cloud.organizationId, snapshot_id: snapshot.id, person_id: personId, capability_key: capability.key, capability_name: capability.name, capability_category: capability.category, critical: capability.critical, qualification_level: qualification.level, qualification_status: levelMeta[qualification.level].status, evaluator_name: qualification.evaluator, effective_date: qualification.effectiveDate || null, review_date: qualification.reviewDate || null, restriction_note: qualification.restriction, evidence_note: qualification.evidenceNote, evidence_names: qualification.evidenceNames, created_by: cloud.user.id, updated_at: new Date().toISOString() }; }));
-        const { error: qualificationsError } = await supabase.from("workforce_readiness_qualifications").upsert(qualificationRows, { onConflict: "snapshot_id,person_id,capability_key" }); if (qualificationsError) throw qualificationsError;
-        setNotice(`${id} submitted to the secure Northstar workspace with ${people.length} team records.`);
-      } else setNotice(`${id} saved in the Northstar demonstration workspace. Sign in to Secure cloud for tenant-protected persistence.`);
-      setRecordId(id); setSubmitted(true);
-    } catch (caught) { setNotice(caught instanceof Error ? caught.message : "Workforce Readiness could not submit to Northstar."); }
-    finally { setSaving(false); }
-  }
-  function exportRecord() { const id = recordId || createRecordId(); if (!recordId) setRecordId(id); const url = URL.createObjectURL(new Blob([JSON.stringify(buildPayload(id), null, 2)], { type: "application/json" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `${id}-workforce-readiness.json`; anchor.click(); URL.revokeObjectURL(url); }
+  const submitInstruction = () => {
+    if (!builder.id.trim() || !builder.title.trim() || !builder.workCenter.trim() || !steps[0]?.instruction.trim()) {
+      flash("Add a document number, title, work center, and at least one instruction step.");
+      return;
+    }
+    setDocuments((current) => [{
+      id: builder.id.trim().toUpperCase(),
+      title: builder.title.trim(),
+      type: builder.type,
+      department: builder.department,
+      workCenter: builder.workCenter.trim(),
+      revision: "A",
+      owner: "Davicorp Process Owner",
+      status: "Under Review",
+      training: "Practical demonstration",
+      review: "2027-08-04",
+    }, ...current]);
+    setBuilder({ id: "", title: "", type: "Work Instruction", department: "Operations", workCenter: "", purpose: "", role: "Assembly Technician" });
+    setSteps([{ instruction: "", tool: "", safety: "", quality: "", result: "" }]);
+    setTab("approvals");
+    flash("Controlled instruction submitted for approval and revision-impact review.");
+  };
+
+  const completeTraining = (id) => {
+    setAssignments((current) => current.map((item) => item.id === id ? { ...item, status: "Complete" } : item));
+    flash("Training evidence recorded. Practical authorization remains controlled by competency signoff.");
+  };
+
+  const completeEvaluation = () => {
+    if (!evaluation) return;
+    setAssignments((current) => current.map((item) => item.employee === evaluation.employee ? { ...item, status: "Complete" } : item));
+    setAuthorizedCount((count) => Math.min(24, count + 1));
+    setExpiredCount((count) => Math.max(0, count - 1));
+    setEvaluation(null);
+    flash("Competency verified. Davicorp authorization and Executive Intelligence readiness updated.");
+  };
+
+  const exportSnapshot = () => {
+    const blob = new Blob([JSON.stringify({ summary, documents, assignments }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "Davicorp-Workforce-Readiness-Demo.json";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <main className="wr-shell">
-      <header className="wr-header">
-        <a href="/" className="back" aria-label="Return to Northstar"><ArrowLeft size={18} /></a>
-        <div className="brand-lockup"><img src={QMS_LOGO} alt="QMSPilot" /></div>
-        <div className="northstar-lockup"><img src={NORTHSTAR_LOGO} alt="Northstar" /></div>
-        <div className="header-meta"><small>Northstar-connected production tool</small><strong>Workforce Readiness</strong></div>
-        <div className="header-status"><span />Human supervised</div>
-      </header>
+      <aside className="wr-sidebar">
+        <div className="wr-brand wr-qms"><img src={QMSPILOT_LOGO_DATA_URI} alt="QMSPilot" /></div>
+        <div className="wr-brand wr-northstar"><img src={NORTHSTAR_LOGO_DATA_URI} alt="Northstar" /></div>
+        <div className="wr-company"><small>DEMONSTRATION TENANT</small><strong>Davicorp</strong><span>Controlled manufacturing workspace</span></div>
+        <nav>
+          {tabs.map(([id, label, Icon]) => (
+            <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}>
+              <Icon size={17} /><span>{label}</span><ChevronRight size={14} />
+            </button>
+          ))}
+        </nav>
+        <div className="wr-side-footer">
+          <small>CONNECTED ARCHITECTURE</small>
+          <span><CheckCircle2 size={13} /> Workspace owns records</span>
+          <span><BarChart3 size={13} /> Executive Intelligence consumes results</span>
+          <a href="/executive-intelligence">View Executive Intelligence <ArrowRight size={14} /></a>
+        </div>
+      </aside>
 
-      <section className="hero"><div className="hero-copy"><div className="eyebrow"><GraduationCap size={17} /> SKILLS MATRIX · QUALIFICATION CONTROL · CAPACITY RISK</div><h1>Know whether your workforce can safely deliver what the business has promised.</h1><p>Build the team roster, control qualification evidence, identify cross-training priorities, and prove capacity confidence to leadership and customers.</p><div className="chips"><span>Tool ID QMSP-WR-001</span><span>Version 2.0.0</span><span>Northstar Connected</span><span>ISO 9001 · 7.2 aligned</span></div></div><article className="readiness-card"><small>WORKFORCE READINESS</small><strong>{metrics.readinessScore}%</strong><span>{metrics.criticalGaps.length ? "Leadership action required" : "Critical coverage controlled"}</span><div className="ring" style={{ background: `conic-gradient(#0a66ff ${metrics.readinessScore * 3.6}deg,#26384d 0)` }}><div>{metrics.readinessScore}</div></div></article></section>
+      <section className="wr-main">
+        <header className="wr-topbar">
+          <div><small>QMSPILOT NORTHSTAR · OUR WORKFORCE</small><strong>Controlled Work Instructions & Workforce Readiness</strong></div>
+          <div className="wr-top-actions"><span>Design-partner demonstration</span><button onClick={exportSnapshot}><Download size={15} /> Export</button></div>
+        </header>
 
-      <section className="toolbar no-print"><button onClick={loadDemo}><Sparkles size={17} />Load design-partner demo</button><button onClick={saveDraft}><Save size={17} />Save draft</button><button onClick={() => window.print()}><Printer size={17} />Executive report</button><button onClick={exportRecord}><Download size={17} />Export record</button><button onClick={clearTool}><RotateCcw size={17} />New assessment</button><button className="submit" onClick={submitToNorthstar} disabled={saving}><Send size={17} />{saving ? "Submitting..." : "Submit to Northstar"}</button></section>
-      {notice && <div className={`notice ${submitted ? "submitted" : ""}`}>{submitted ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}{notice}</div>}
+        <div className="wr-content">
+          {notice && <div className="wr-notice"><Sparkles size={17} />{notice}</div>}
 
-      <section className="metrics"><article><small>Active team members</small><strong>{metrics.active.length}</strong><span>{departments.length} departments</span></article><article><small>Critical skill gaps</small><strong>{metrics.criticalGaps.length}</strong><span>Need two qualified people</span></article><article><small>Single-person dependencies</small><strong>{metrics.singlePointDependencies.length}</strong><span>Continuity exposure</span></article><article><small>Training in progress</small><strong>{metrics.inTraining}</strong><span>Active development</span></article><article><small>Expiring in 90 days</small><strong>{metrics.expiring}</strong><span>Renewal attention</span></article><article><small>Northstar record</small><strong className="record-id">{recordId || "DRAFT"}</strong><span>{submitted ? "Submitted" : "Not submitted"}</span></article></section>
+          {tab === "dashboard" && <>
+            <section className="wr-hero">
+              <div>
+                <small>RIGHT INSTRUCTION · RIGHT PERSON · RIGHT REVISION</small>
+                <h1>Control the work, prove competency, and know who is ready.</h1>
+                <p>Davicorp uses one connected flow from approved SOPs and work instructions through training, demonstrated competency, authorization, and executive visibility.</p>
+                <div className="wr-hero-actions"><button onClick={() => setTab("builder")}><Plus size={16} /> Create Instruction</button><a href="/executive-intelligence">Open Executive Readiness View <ArrowRight size={16} /></a></div>
+              </div>
+              <div className="wr-readiness-card">
+                <small>DAVICORP WORKFORCE READINESS</small>
+                <div className="wr-ring" style={{ "--score": `${readiness * 3.6}deg` }}><div><strong>{readiness}%</strong><span>{authorizedCount} of 24 authorized</span></div></div>
+                <b>{expiredCount ? "Focused action required" : "Workforce ready"}</b>
+                <em>Feeds Executive Intelligence automatically</em>
+              </div>
+            </section>
 
-      <section className="panel"><div className="panel-title"><div><small>01 · OPERATING CONTEXT</small><h2>Define the workforce decision</h2></div><Target size={24} /></div><div className="form-grid"><label>Organization<input value={setup.organization} onChange={(event) => setSetup({ ...setup, organization: event.target.value })} /></label><label>Site / facility<input value={setup.site} onChange={(event) => setSetup({ ...setup, site: event.target.value })} placeholder="Required" /></label><label>Readiness owner<input value={setup.readinessOwner} onChange={(event) => setSetup({ ...setup, readinessOwner: event.target.value })} placeholder="Required" /></label><label>Planning horizon<select value={setup.planningHorizon} onChange={(event) => setSetup({ ...setup, planningHorizon: event.target.value })}><option>30 days</option><option>60 days</option><option>90 days</option><option>12 months</option></select></label><label className="wide">Leadership intent<textarea value={setup.leadershipIntent} onChange={(event) => setSetup({ ...setup, leadershipIntent: event.target.value })} /></label></div></section>
+            <section className="wr-metrics">
+              {[
+                ["Active documents", activeDocuments, "Current controlled source", FileCheck2],
+                ["Awaiting approval", awaitingApproval, "Revision decisions pending", FileClock],
+                ["Training required", trainingRequired, "Open employee assignments", GraduationCap],
+                ["Fully authorized", authorizedCount, "Employees approved independently", BadgeCheck],
+                ["Expired qualifications", expiredCount, "Immediate supervisor action", AlertTriangle],
+                ["Executive feed", "Live", "Operational data summarized", BarChart3],
+              ].map(([label, value, note, Icon]) => <article key={label}><span><Icon size={19} /></span><small>{label}</small><strong>{value}</strong><em>{note}</em></article>)}
+            </section>
 
-      <section className="panel roster-panel"><div className="panel-title roster-title"><div><small>02 · TEAM ROSTER MANAGEMENT</small><h2>Build the controlled workforce roster</h2><p>Add people individually, update transfers and status, duplicate qualification profiles, or import existing Excel data.</p></div><Users size={24} /></div><div className="roster-actions no-print"><button className="primary" onClick={() => openNewPerson()}><Plus size={16} />Add team member</button><button onClick={() => setImportModal(true)}><FileSpreadsheet size={16} />Import Excel / CSV</button><button onClick={downloadTemplate}><FileDown size={16} />Download template</button></div><div className="roster-filters"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, ID, role, or supervisor" /><select value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)}><option value="all">All departments</option>{departments.map((department) => <option key={department}>{department}</option>)}</select><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="active">Active</option><option value="leave">On leave</option><option value="inactive">Inactive</option><option value="all">All statuses</option></select></div>{!filteredPeople.length ? <div className="empty"><UserRoundCheck size={42} /><h3>No matching team members</h3><p>Add a person, import your current roster, or load the design-partner demonstration.</p></div> : <div className="roster-table"><table><thead><tr><th>Team member</th><th>Department / role</th><th>Shift / supervisor</th><th>Status</th><th>Qualification coverage</th><th className="no-print">Actions</th></tr></thead><tbody>{filteredPeople.map((person) => { const qualified = capabilities.filter((capability) => (person.qualifications[capability.key]?.level || 0) >= 4).length; return <tr key={person.id}><td><div className="person-cell">{person.photoDataUrl ? <img src={person.photoDataUrl} alt="" /> : <span>{initials(person.name)}</span>}<div><strong>{person.name}</strong><small>{person.employeeCode} · Hired {person.hireDate || "Not set"}</small></div></div></td><td><strong>{person.department}</strong><small>{person.role}</small></td><td><strong>{person.shift}</strong><small>{person.supervisor || "Supervisor not set"}</small></td><td><b className={`status-pill ${person.status}`}>{person.status}</b></td><td><strong>{qualified}/{capabilities.length}</strong><small>Fully qualified or trainer</small></td><td className="actions no-print"><button title="Edit" onClick={() => editPerson(person)}><Pencil size={15} /></button><button title="Open qualifications" onClick={() => openQualification(person)}><BadgeCheck size={15} /></button><button title="View history" onClick={() => setHistoryPerson(person)}><History size={15} /></button><button title="Duplicate qualification profile" onClick={() => openNewPerson(person)}><Copy size={15} /></button><button title={person.status === "active" ? "Deactivate" : "Activate"} onClick={() => setPersonStatus(person, person.status === "active" ? "inactive" : "active")}>{person.status === "active" ? <UserRoundX size={15} /> : <UserRoundCheck size={15} />}</button><button className="danger" title="Delete" onClick={() => deletePerson(person)}><Trash2 size={15} /></button></td></tr>; })}</tbody></table></div>}</section>
+            <section className="wr-grid-two">
+              <article className="wr-panel">
+                <div className="wr-heading"><div><small>CONNECTED CONTROL FLOW</small><h2>From controlled requirement to authorized employee</h2></div><ShieldCheck /></div>
+                <div className="wr-flow">{[
+                  ["01", "Create", "Build visual work instruction"],
+                  ["02", "Approve", "Control revision and impact"],
+                  ["03", "Release", "Expose only active revision"],
+                  ["04", "Train", "Route by role and work center"],
+                  ["05", "Verify", "Observe practical performance"],
+                  ["06", "Authorize", "Update readiness intelligence"],
+                ].map(([number, title, note]) => <div key={number}><span>{number}</span><strong>{title}</strong><small>{note}</small></div>)}</div>
+              </article>
+              <article className="wr-panel">
+                <div className="wr-heading"><div><small>READINESS BY WORK CENTER</small><h2>Where Davicorp can execute confidently</h2></div><Users /></div>
+                <div className="wr-bars">{summary.workCenters.map((item) => <div key={item.name}><span><strong>{item.name}</strong><em>{item.readiness}%</em></span><i><b style={{ width: `${item.readiness}%` }} /></i></div>)}</div>
+              </article>
+            </section>
 
-      <section className="panel matrix-panel"><div className="panel-title"><div><small>03 · CONTROLLED SKILLS MATRIX</small><h2>Qualification coverage by person and capability</h2></div><Users size={24} /></div>{!metrics.active.length ? <div className="empty"><UserRoundCheck size={42} /><h3>No active workforce records</h3><p>Add or reactivate team members to generate the skills matrix.</p></div> : <div className="matrix-wrap"><table><thead><tr><th>Employee</th>{capabilities.map((capability) => <th key={capability.key}><span>{capability.name}</span><small>{capability.critical ? "CRITICAL" : capability.category}</small></th>)}</tr></thead><tbody>{metrics.active.map((person) => <tr key={person.id}><td><strong>{person.name}</strong><small>{person.role} · {person.shift}</small></td>{capabilities.map((capability) => { const qualification = person.qualifications[capability.key] || blankQualification(); return <td key={capability.key}><button className={`level level-${qualification.level}`} onClick={() => setSelection({ personId: person.id, capabilityKey: capability.key })}>{qualification.level}</button><select value={qualification.level} onChange={(event) => updateQualification(person.id, capability.key, { level: Number(event.target.value) })}>{levels.map((level) => <option value={level} key={level}>{level} · {levelMeta[level].label}</option>)}</select></td>; })}</tr>)}</tbody></table></div>}<div className="legend">{levels.map((level) => <span key={level}><b className={`level-dot level-${level}`}>{level}</b>{levelMeta[level].label}</span>)}</div></section>
+            <section className="wr-grid-two">
+              <article className="wr-panel">
+                <div className="wr-heading"><div><small>PRIORITY ACTIONS</small><h2>What supervisors need to close</h2></div><AlertTriangle /></div>
+                <div className="wr-action-list">
+                  <div><span className="bad">Critical</span><strong>Revalidate two electrical-test qualifications</strong><small>Owner: Quality Supervisor · Due Aug 8</small></div>
+                  <div><span className="warn">High</span><strong>Approve WI-TEST-014 Rev C</strong><small>Owner: Operations Manager · Due Aug 5</small></div>
+                  <div><span className="blue">Planned</span><strong>Complete practical signoff for Maria Torres</strong><small>Owner: Assembly Lead · Due Aug 6</small></div>
+                </div>
+              </article>
+              <article className="wr-panel">
+                <div className="wr-heading"><div><small>EXECUTIVE INTELLIGENCE FEED</small><h2>What leadership receives</h2></div><Sparkles /></div>
+                <div className="wr-feed">
+                  <div><strong>{readiness}% readiness</strong><span>Enterprise and work-center rollup</span></div>
+                  <div><strong>{expiredCount} critical gaps</strong><span>Expired or single-point qualifications</span></div>
+                  <div><strong>{trainingRequired} open assignments</strong><span>Training exposure and due-date risk</span></div>
+                  <div><strong>{awaitingApproval} pending revisions</strong><span>Documents capable of triggering retraining</span></div>
+                </div>
+                <a className="wr-link" href="/executive-intelligence">Open leadership view <ArrowRight size={15} /></a>
+              </article>
+            </section>
+          </>}
 
-      {selected && <section className="panel qualification-panel" ref={qualificationRef}><div className="panel-title"><div><small>04 · INDIVIDUAL QUALIFICATION RECORD</small><h2>{selected.person.name} · {selected.capability.name}</h2></div><BadgeCheck size={24} /></div><div className="qualification-grid"><label>Qualification level<select value={selected.qualification.level} onChange={(event) => updateQualification(selected.person.id, selected.capability.key, { level: Number(event.target.value) })}>{levels.map((level) => <option value={level} key={level}>{level} · {levelMeta[level].label}</option>)}</select></label><label>Evaluator / qualification authority<input value={selected.qualification.evaluator} onChange={(event) => updateQualification(selected.person.id, selected.capability.key, { evaluator: event.target.value })} /></label><label>Effective date<input type="date" value={selected.qualification.effectiveDate} onChange={(event) => updateQualification(selected.person.id, selected.capability.key, { effectiveDate: event.target.value })} /></label><label>Review / expiration date<input type="date" value={selected.qualification.reviewDate} onChange={(event) => updateQualification(selected.person.id, selected.capability.key, { reviewDate: event.target.value })} /></label><label className="wide">Restrictions or required supervision<textarea value={selected.qualification.restriction} onChange={(event) => updateQualification(selected.person.id, selected.capability.key, { restriction: event.target.value })} /></label><label className="wide">Objective evidence / evaluator note<textarea value={selected.qualification.evidenceNote} onChange={(event) => updateQualification(selected.person.id, selected.capability.key, { evidenceNote: event.target.value })} /></label><label className="wide evidence"><UploadCloud size={20} /><span><strong>Attach qualification evidence</strong><small>{selected.qualification.evidenceNames.length ? selected.qualification.evidenceNames.join(", ") : "Photos, checklists, test results, videos, or signoff records"}</small></span><input type="file" multiple onChange={attachEvidence} /></label></div><div className="authority"><ShieldCheck size={20} /><span><strong>Human qualification authority</strong><small>Northstar records evidence and readiness intelligence. An authorized human evaluator remains the only authority who can grant or revoke qualification.</small></span></div></section>}
+          {tab === "library" && <section className="wr-panel">
+            <div className="wr-heading"><div><small>CONTROLLED SOURCE OF TRUTH</small><h2>Document Library</h2><p>Only approved and active revisions are available through shop-floor access.</p></div><button className="wr-primary" onClick={() => setTab("builder")}><Plus size={15} /> New Controlled Document</button></div>
+            <div className="wr-filters"><label><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search document, process, owner..." /></label><select value={department} onChange={(event) => setDepartment(event.target.value)}><option>All</option><option>Operations</option><option>Quality</option></select></div>
+            <div className="wr-table"><table><thead><tr><th>Document</th><th>Title</th><th>Type</th><th>Work Center</th><th>Rev</th><th>Owner</th><th>Status</th><th>Training Impact</th></tr></thead><tbody>{filteredDocuments.map((item) => <tr key={item.id}><td><strong>{item.id}</strong></td><td>{item.title}</td><td>{item.type}</td><td>{item.workCenter}</td><td>{item.revision}</td><td>{item.owner}</td><td><span className={`wr-tag ${statusClass(item.status)}`}>{item.status}</span></td><td>{item.training}</td></tr>)}</tbody></table></div>
+          </section>}
 
-      <section className="two-grid"><article className="panel"><div className="panel-title"><div><small>05 · CAPACITY RISK</small><h2>What can stop the operation</h2></div><BarChart3 size={24} /></div><div className="risk-list">{capabilities.filter((item) => item.critical).map((capability) => { const qualified = metrics.active.filter((person) => (person.qualifications[capability.key]?.level || 0) >= 4); const tone = qualified.length >= 2 ? "good" : qualified.length === 1 ? "warn" : "bad"; return <div key={capability.key}><span className={tone}>{qualified.length}</span><span><strong>{capability.name}</strong><small>{qualified.length >= 2 ? "Resilient coverage" : qualified.length === 1 ? "Single-person dependency" : "No fully qualified coverage"}</small></span></div>; })}</div></article><article className="panel"><div className="panel-title"><div><small>06 · CROSS-TRAINING PRIORITIES</small><h2>Where the next training hour matters most</h2></div><GraduationCap size={24} /></div><div className="plan-list">{recommendations.length ? recommendations.map((item) => <div key={item.capability}><span className={item.priority.toLowerCase()}>{item.priority}</span><span><strong>{item.capability}</strong><small>Develop {item.candidate} from level {item.currentLevel} · Current full coverage: {item.coverage}</small></span></div>) : <div className="success-state"><CheckCircle2 /><span><strong>Critical coverage is controlled.</strong><small>Continue planned qualification renewals and succession development.</small></span></div>}</div></article></section>
+          {tab === "builder" && <>
+            <section className="wr-panel">
+              <div className="wr-heading"><div><small>VISUAL STANDARD WORK</small><h2>Instruction Builder</h2><p>Create controlled content that employees can use at the point of work.</p></div><div className="wr-button-row"><button onClick={() => flash("Draft saved in this Davicorp demonstration browser.")}><Save size={15} /> Save Draft</button><button className="wr-primary" onClick={submitInstruction}><Send size={15} /> Submit for Approval</button></div></div>
+              <div className="wr-form-grid">
+                <label>Document Number<input value={builder.id} onChange={(event) => setBuilder({ ...builder, id: event.target.value })} placeholder="WI-ASM-007" /></label>
+                <label>Title<input value={builder.title} onChange={(event) => setBuilder({ ...builder, title: event.target.value })} placeholder="Install fan motor assembly" /></label>
+                <label>Document Type<select value={builder.type} onChange={(event) => setBuilder({ ...builder, type: event.target.value })}><option>Work Instruction</option><option>SOP</option><option>Visual Aid</option><option>Checklist</option><option>Standard Work</option></select></label>
+                <label>Department<select value={builder.department} onChange={(event) => setBuilder({ ...builder, department: event.target.value })}><option>Operations</option><option>Quality</option><option>Maintenance</option></select></label>
+                <label>Work Center<input value={builder.workCenter} onChange={(event) => setBuilder({ ...builder, workCenter: event.target.value })} placeholder="Final Assembly" /></label>
+                <label>Affected Role<input value={builder.role} onChange={(event) => setBuilder({ ...builder, role: event.target.value })} /></label>
+                <label className="full">Purpose and Scope<textarea value={builder.purpose} onChange={(event) => setBuilder({ ...builder, purpose: event.target.value })} placeholder="Define what the instruction controls, where it applies, and the expected result." /></label>
+              </div>
+            </section>
+            <section className="wr-panel">
+              <div className="wr-heading"><div><small>POINT-OF-WORK CONTENT</small><h2>Instruction Steps</h2></div><button onClick={() => setSteps((current) => [...current, { instruction: "", tool: "", safety: "", quality: "", result: "" }])}><Plus size={15} /> Add Step</button></div>
+              <div className="wr-step-list">{steps.map((step, index) => <article key={index}><div className="wr-step-number">{index + 1}</div><div className="wr-form-grid"><label className="full">Instruction<textarea value={step.instruction} onChange={(event) => setSteps((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, instruction: event.target.value } : item))} placeholder="Describe the action in clear, observable language." /></label><label>Required Tooling<input value={step.tool} onChange={(event) => setSteps((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, tool: event.target.value } : item))} /></label><label>PPE / Safety<input value={step.safety} onChange={(event) => setSteps((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, safety: event.target.value } : item))} /></label><label>Quality Checkpoint<input value={step.quality} onChange={(event) => setSteps((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, quality: event.target.value } : item))} /></label><label>Expected Result<input value={step.result} onChange={(event) => setSteps((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, result: event.target.value } : item))} /></label></div></article>)}</div>
+            </section>
+          </>}
 
-      <section className="executive-summary"><div><small>PILOT EXECUTIVE INTERPRETATION</small><h2>{metrics.criticalGaps.length ? "Protect continuity before adding demand." : "The workforce can support the current operating plan."}</h2><p>{metrics.criticalGaps.length ? `${metrics.criticalGaps.length} critical capabilities do not yet have two fully qualified people. Leadership should approve the cross-training priorities before relying on overtime or additional production demand.` : "Critical processes have resilient qualified coverage. Maintain renewal discipline and continue developing trainer capacity."}</p></div><button onClick={submitToNorthstar} disabled={saving}><Send size={18} />Submit controlled readiness record</button></section>
-      <p className="disclaimer">Northstar Workforce Readiness supports direct roster entry, Excel-compatible CSV import, controlled qualifications, traceable history, executive reporting, and Secure cloud submission. Qualification decisions remain subject to company procedures and authorized human approval.</p>
+          {tab === "approvals" && <section className="wr-panel">
+            <div className="wr-heading"><div><small>DOCUMENT CHANGE CONTROL</small><h2>Approvals & Revision Impact</h2><p>A revision is not released until its operational and training impact is understood.</p></div><ShieldCheck /></div>
+            <div className="wr-table"><table><thead><tr><th>Document</th><th>Change</th><th>Affected Area</th><th>Training Decision</th><th>Status</th><th>Decision</th></tr></thead><tbody>{documents.filter((item) => item.status === "Under Review").map((item) => <tr key={item.id}><td><strong>{item.id} Rev {item.revision}</strong></td><td>Controlled content and visual sequence updated</td><td>{item.workCenter}</td><td>{item.training}</td><td><span className="wr-tag warn">Pending</span></td><td><button className="wr-primary" onClick={() => approveDocument(item.id)}><CheckCircle2 size={14} /> Approve</button></td></tr>)}</tbody></table></div>
+            <div className="wr-impact"><ClipboardCheck /><div><strong>Required revision-impact questions</strong><p>What changed? Why? Which work centers, roles, employees, WIP, safety controls, quality checks, tooling, inspection criteria, or customer requirements are affected? Is retraining or competency revalidation required?</p></div></div>
+          </section>}
 
-      {personModal && <div className="modal-backdrop"><div className="modal person-modal"><header><div><small>{personForm.id ? "EDIT TEAM MEMBER" : "ADD TEAM MEMBER"}</small><h2>{personForm.id ? personForm.name : "Create workforce record"}</h2></div><button onClick={() => setPersonModal(false)}><X /></button></header><div className="person-form"><div className="photo-box">{personForm.photoDataUrl ? <img src={personForm.photoDataUrl} alt="Preview" /> : <span>{initials(personForm.name)}</span>}<label><Upload size={15} />Optional photo<input type="file" accept="image/*" onChange={handlePhoto} /></label></div><div className="person-fields"><label>Employee name<input value={personForm.name} onChange={(event) => setPersonForm({ ...personForm, name: event.target.value })} /></label><label>Employee ID<input value={personForm.employeeCode} onChange={(event) => setPersonForm({ ...personForm, employeeCode: event.target.value })} /></label><label>Department<input value={personForm.department} onChange={(event) => setPersonForm({ ...personForm, department: event.target.value })} /></label><label>Job title / role<input value={personForm.role} onChange={(event) => setPersonForm({ ...personForm, role: event.target.value })} /></label><label>Shift<select value={personForm.shift} onChange={(event) => setPersonForm({ ...personForm, shift: event.target.value })}><option>Day</option><option>Night</option><option>Weekend</option><option>Other</option></select></label><label>Supervisor<input value={personForm.supervisor} onChange={(event) => setPersonForm({ ...personForm, supervisor: event.target.value })} /></label><label>Hire date<input type="date" value={personForm.hireDate} onChange={(event) => setPersonForm({ ...personForm, hireDate: event.target.value })} /></label><label>Employment status<select value={personForm.status} onChange={(event) => setPersonForm({ ...personForm, status: event.target.value })}><option value="active">Active</option><option value="leave">On leave</option><option value="inactive">Inactive</option></select></label></div></div><footer><button onClick={() => setPersonModal(false)}>Cancel</button><button className="primary" onClick={savePerson}><Save size={16} />Save team member</button></footer></div></div>}
+          {tab === "training" && <section className="wr-panel">
+            <div className="wr-heading"><div><small>ROLE-BASED ROUTING</small><h2>Training Assignments</h2><p>Assignments originate from approved revision-impact decisions.</p></div><GraduationCap /></div>
+            <div className="wr-table"><table><thead><tr><th>Employee</th><th>Role</th><th>Controlled Document</th><th>Requirement</th><th>Due</th><th>Status</th><th>Evidence</th></tr></thead><tbody>{assignments.map((item) => <tr key={item.id}><td><strong>{item.employee}</strong></td><td>{item.role}</td><td>{item.document}</td><td>{item.requirement}</td><td>{item.due}</td><td><span className={`wr-tag ${statusClass(item.status)}`}>{item.status}</span></td><td>{item.status === "Complete" ? <span className="wr-tag good">Recorded</span> : <button onClick={() => completeTraining(item.id)}>Mark Training Complete</button>}</td></tr>)}</tbody></table></div>
+          </section>}
 
-      {importModal && <div className="modal-backdrop"><div className="modal import-modal"><header><div><small>EXCEL / CSV ROSTER IMPORT</small><h2>Bring your current team into Northstar</h2></div><button onClick={() => setImportModal(false)}><X /></button></header><p>Upload a CSV exported from Excel, or copy rows from Excel and paste them below. Existing employee IDs are updated; new IDs are added.</p><div className="import-controls"><label className="dropzone"><FileSpreadsheet size={28} /><strong>Choose CSV file</strong><small>Excel: Save As → CSV UTF-8</small><input type="file" accept=".csv,.txt,text/csv" onChange={readImportFile} /></label><textarea value={importText} onChange={(event) => setImportText(event.target.value)} placeholder="employeeCode,name,department,role,shift,supervisor,hireDate,status" /></div><footer><button onClick={downloadTemplate}><FileDown size={16} />Download template</button><button onClick={() => setImportModal(false)}>Cancel</button><button className="primary" onClick={importRoster}><Upload size={16} />Import roster</button></footer></div></div>}
+          {tab === "competency" && <section className="wr-grid-two">
+            <article className="wr-panel"><div className="wr-heading"><div><small>DEMONSTRATED ABILITY</small><h2>Pending Practical Evaluations</h2></div><UserRoundCheck /></div><div className="wr-evaluations">{[
+              ["Maria Torres", "Fan Motor Assembly", "Assembly Lead"],
+              ["Andre Lewis", "Electrical Functional Test", "Quality Supervisor"],
+              ["Sofia Reed", "Foam Fixture Setup", "Production Supervisor"],
+            ].map(([employee, process, trainer]) => <div key={employee}><span><strong>{employee}</strong><small>{process} · Trainer: {trainer}</small></span><button className="wr-primary" onClick={() => setEvaluation({ employee, process, trainer })}>Evaluate</button></div>)}</div></article>
+            <article className="wr-panel"><div className="wr-heading"><div><small>QUALIFICATION MODEL</small><h2>Four controlled levels</h2></div><BadgeCheck /></div><div className="wr-levels"><div><span>1</span><strong>Awareness</strong><small>Reviewed current document</small></div><div><span>2</span><strong>Understanding</strong><small>Confirmed comprehension</small></div><div><span>3</span><strong>Demonstrated Competency</strong><small>Observed completing task correctly</small></div><div><span>4</span><strong>Authorized</strong><small>Approved for independent work</small></div></div></article>
+          </section>}
 
-      {historyPerson && <div className="modal-backdrop"><div className="modal history-modal"><header><div><small>TRAINING & QUALIFICATION HISTORY</small><h2>{historyPerson.name}</h2></div><button onClick={() => setHistoryPerson(null)}><X /></button></header><div className="history-list">{historyPerson.history?.length ? historyPerson.history.map((event) => <article key={event.id}><span><History size={16} /></span><div><strong>{event.type}</strong><p>{event.detail}</p><small>{new Date(event.date).toLocaleString()} · {event.actor}</small></div></article>) : <div className="empty"><History size={36} /><h3>No history recorded yet</h3></div>}</div><footer><button className="primary" onClick={() => setHistoryPerson(null)}>Done</button></footer></div></div>}
+          {tab === "matrix" && <section className="wr-panel">
+            <div className="wr-heading"><div><small>AT-A-GLANCE CAPABILITY</small><h2>Workforce Readiness Matrix</h2><p>Operational detail remains here; the leadership rollup feeds Executive Intelligence.</p></div><a className="wr-primary" href="/executive-intelligence">View Executive Rollup <ArrowRight size={14} /></a></div>
+            <div className="wr-table"><table className="wr-matrix"><thead><tr><th>Employee</th>{["Fan Assembly", "Electrical Test", "Foam Setup", "Final Inspection", "Packaging"].map((skill) => <th key={skill}>{skill}</th>)}</tr></thead><tbody>{matrixRows.map((person) => <tr key={person.name}><td><strong>{person.name}</strong><small>{person.role}</small></td>{person.skills.map((skill, index) => <td key={index}><span className={`wr-cell ${statusClass(skill)}`}>{skill === "Qualified" ? "Q" : skill === "Training" ? "T" : skill === "Expired" ? "E" : skill === "Supervised" ? "S" : "—"}</span></td>)}</tr>)}</tbody></table></div>
+            <div className="wr-legend"><span><i className="good">Q</i>Qualified</span><span><i className="warn">T</i>Training</span><span><i className="bad">E</i>Expired</span><span><i className="warn">S</i>Supervised</span><span><i className="blue">—</i>Not applicable</span></div>
+          </section>}
+
+          {tab === "shopfloor" && <section className="wr-grid-two">
+            <article className="wr-panel"><div className="wr-heading"><div><small>POINT-OF-USE ACCESS</small><h2>Scan or Search</h2></div><QrCode /></div><div className="wr-qr"><QrCode size={78} /><strong>Davicorp Machine QR · FA-04</strong><span>Opens only the latest approved instruction for this work center.</span></div><label className="wr-search"><Search size={15} /><input placeholder="Search machine, part, process, or document" /></label></article>
+            <article className="wr-panel"><div className="wr-heading"><div><small>LATEST APPROVED REVISION</small><h2>WI-ASM-006 Rev B · Fan Motor Assembly</h2><p>Effective August 1, 2026 · Davicorp Final Assembly</p></div><FileCheck2 /></div><div className="wr-floor-steps"><div><span>01</span><strong>Verify components</strong><p>Confirm motor, fasteners, harness, and mounting plate match the traveler.</p><em className="warn">Quality checkpoint</em></div><div><span>02</span><strong>Install motor</strong><p>Orient the harness toward the cable channel and install four fasteners finger-tight.</p><em className="blue">Tool: torque driver</em></div><div><span>03</span><strong>Torque and verify</strong><p>Torque in cross pattern to the listed value and record completion.</p><em className="good">Verification required</em></div></div><div className="wr-button-row"><button className="wr-primary" onClick={() => flash("Current revision acknowledged by Davicorp employee.")}><CheckCircle2 size={15} /> Acknowledge Revision</button><button onClick={() => flash("Improvement feedback routed to the document owner.")}><Wrench size={15} /> Report an Issue</button></div></article>
+          </section>}
+        </div>
+      </section>
+
+      {evaluation && <div className="wr-modal-backdrop" onClick={() => setEvaluation(null)}><section className="wr-modal" onClick={(event) => event.stopPropagation()}><div className="wr-heading"><div><small>PRACTICAL COMPETENCY EVALUATION</small><h2>{evaluation.employee}</h2><p>{evaluation.process} · Trainer: {evaluation.trainer}</p></div><BadgeCheck /></div><div className="wr-form-grid"><label>Evaluation Result<select><option>Competent — authorize independent work</option><option>Competent with supervision</option><option>Additional training required</option></select></label><label>Qualification Expiration<input type="date" defaultValue="2027-08-04" /></label><label className="full">Objective Evidence<textarea placeholder="Record the observed task, acceptance criteria, and evidence reference." /></label></div><div className="wr-button-row"><button onClick={() => setEvaluation(null)}>Cancel</button><button className="wr-primary" onClick={completeEvaluation}><ShieldCheck size={15} /> Complete Signoff</button></div></section></div>}
 
       <style>{`
-        *{box-sizing:border-box}body{margin:0;background:#edf3f8;color:#12253a;font-family:Inter,Arial,sans-serif}.wr-shell{min-height:100vh;padding-bottom:70px}.wr-header{min-height:74px;display:flex;align-items:center;gap:14px;padding:10px 22px;color:#fff;background:linear-gradient(90deg,#061729,#0b3158);border-bottom:1px solid #24547d}.back{width:38px;height:38px;display:grid;place-items:center;border:1px solid #365c7d;border-radius:11px;color:#fff}.brand-lockup{width:172px;padding:8px 10px;border-radius:12px;background:#fff}.brand-lockup img{display:block;width:100%;height:auto}.northstar-lockup{width:220px;padding:4px 8px;border:1px solid #314d67;border-radius:10px;background:#050b12}.northstar-lockup img{display:block;width:100%;height:auto}.header-meta{margin-right:auto}.header-meta small,.header-meta strong{display:block}.header-meta small{color:#8fb5d6;text-transform:uppercase;letter-spacing:.1em}.header-status{display:flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid #2b6d5a;border-radius:999px;color:#c9f3e5;background:#0d3a31;font-size:11px;font-weight:800}.header-status span{width:8px;height:8px;border-radius:50%;background:#45d39d}.hero{max-width:1540px;margin:0 auto;display:grid;grid-template-columns:1.45fr .55fr;gap:18px;padding:28px 24px}.hero-copy{padding:32px;border-radius:24px;color:#fff;background:linear-gradient(135deg,#07192c,#0b477c 62%,#0a66ff);box-shadow:0 24px 60px rgba(9,48,83,.25)}.eyebrow{display:flex;align-items:center;gap:8px;color:#9fd3ff;font-size:11px;font-weight:900;letter-spacing:.12em}.hero h1{max-width:1000px;margin:14px 0 12px;font-size:clamp(34px,4vw,62px);line-height:1.02}.hero p{max-width:900px;color:#d4e7f7;line-height:1.65}.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.chips span{padding:7px 10px;border:1px solid #5f9fd3;border-radius:999px;color:#d9ecfb;font-size:10px;font-weight:800}.readiness-card{display:grid;place-items:center;padding:24px;border:1px solid #dce6ef;border-radius:24px;background:#fff;box-shadow:0 16px 38px rgba(24,55,83,.1);text-align:center}.readiness-card>small{color:#71869a;font-weight:900;letter-spacing:.12em}.readiness-card>strong{font-size:52px}.readiness-card>span{color:#16835a;font-weight:800}.ring{width:150px;height:150px;display:grid;place-items:center;margin-top:12px;border-radius:50%}.ring div{width:112px;height:112px;display:grid;place-items:center;border-radius:50%;background:#fff;font-size:34px;font-weight:900}.toolbar{max-width:1540px;margin:0 auto;padding:0 24px;display:flex;gap:9px;flex-wrap:wrap}.toolbar button,.roster-actions button,.modal button,.executive-summary button{min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;border:1px solid #cddbe7;border-radius:11px;color:#21405d;background:#fff;font-weight:850;cursor:pointer}.toolbar button.submit,.primary,.executive-summary button{border-color:#0a66ff!important;color:#fff!important;background:linear-gradient(135deg,#0d315c,#0a66ff)!important}.toolbar button.submit{margin-left:auto}button:disabled{opacity:.55;cursor:not-allowed}.notice{max-width:1492px;margin:14px auto 0;display:flex;align-items:center;gap:9px;padding:13px 16px;border:1px solid #e7c66c;border-radius:12px;color:#765408;background:#fff9e8;font-weight:800}.notice.submitted{border-color:#8fd0b3;color:#155f45;background:#effbf6}.metrics{max-width:1540px;margin:18px auto 0;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.metrics article{padding:17px;border:1px solid #dce6ef;border-radius:17px;background:#fff}.metrics small,.metrics strong,.metrics span{display:block}.metrics small{color:#70859a;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.metrics strong{margin-top:6px;font-size:28px}.metrics span{margin-top:3px;color:#16835a;font-size:11px;font-weight:800}.record-id{font-size:16px!important}.panel{max-width:1492px;margin:18px auto 0;padding:22px;border:1px solid #dce6ef;border-radius:20px;background:#fff;box-shadow:0 12px 32px rgba(24,55,83,.07)}.panel-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:15px;border-bottom:1px solid #e2eaf1}.panel-title small{color:#71869a;font-weight:900;letter-spacing:.1em}.panel-title h2{margin:5px 0 0}.panel-title p{margin:6px 0 0;color:#6d8194;font-size:12px}.form-grid,.qualification-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:18px}.form-grid label,.qualification-grid label,.person-fields label{display:grid;gap:6px;color:#526a80;font-size:11px;font-weight:850}.form-grid input,.form-grid select,.form-grid textarea,.qualification-grid input,.qualification-grid select,.qualification-grid textarea,.person-fields input,.person-fields select,.roster-filters input,.roster-filters select{width:100%;min-height:42px;padding:10px;border:1px solid #cad9e6;border-radius:10px;color:#12253a;background:#fbfdff;font:inherit}.form-grid textarea,.qualification-grid textarea{min-height:76px;resize:vertical}.wide{grid-column:1/-1}.roster-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.roster-filters{display:grid;grid-template-columns:1fr 220px 170px;gap:10px;margin-top:14px}.roster-table,.matrix-wrap{overflow:auto;margin-top:16px;border:1px solid #dce6ef;border-radius:14px}table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid #e1e9f0;text-align:left;vertical-align:middle}th{background:#f2f7fb;color:#526a80;font-size:10px;text-transform:uppercase;letter-spacing:.05em}td small,td strong{display:block}td small{margin-top:3px;color:#71869a}.person-cell{display:flex;align-items:center;gap:10px;min-width:210px}.person-cell>span,.person-cell>img{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:#0a66ff;color:#fff;object-fit:cover;font-weight:900}.status-pill{display:inline-flex;padding:6px 9px;border-radius:999px;text-transform:capitalize;font-size:9px}.status-pill.active{color:#146145;background:#e9f8f1}.status-pill.leave{color:#845d00;background:#fff5dc}.status-pill.inactive{color:#6b7885;background:#edf1f4}.actions{display:flex;gap:5px}.actions button{width:33px;height:33px;display:grid;place-items:center;border:1px solid #d6e1ea;border-radius:9px;background:#fff;color:#31516e;cursor:pointer}.actions button.danger{color:#a43848}.matrix-wrap table{min-width:1180px}.matrix-wrap th,.matrix-wrap td{text-align:center;border-right:1px solid #e1e9f0}.matrix-wrap th span,.matrix-wrap th small,.matrix-wrap td:first-child strong,.matrix-wrap td:first-child small{display:block}.matrix-wrap th small{margin-top:5px;color:#0a66ff}.matrix-wrap td:first-child{text-align:left;min-width:210px}.level{width:42px;height:42px;border:0;border-radius:12px;color:#fff;cursor:pointer;font-size:18px;font-weight:900}.level-0{background:#788a99}.level-1{background:#a85a64}.level-2{background:#b87b19}.level-3{background:#3d7eaf}.level-4{background:#16835a}.level-5{background:#6b3da0}.matrix-wrap select{display:block;width:100%;margin-top:7px;padding:6px;border:1px solid #d4e0e9;border-radius:7px;font-size:10px}.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:15px}.legend span{display:flex;align-items:center;gap:6px;color:#526a80;font-size:11px}.level-dot{width:25px;height:25px;display:grid;place-items:center;border-radius:7px;color:#fff}.empty{padding:42px;text-align:center;color:#6c8296}.evidence{display:flex!important;grid-template-columns:auto 1fr auto!important;align-items:center;padding:15px;border:1px dashed #7db2df;border-radius:13px;background:#f2f8fd;cursor:pointer}.evidence span strong,.evidence span small{display:block}.evidence input{max-width:260px}.authority{display:flex;align-items:flex-start;gap:10px;margin-top:15px;padding:14px;border-radius:13px;color:#155f45;background:#effbf6}.authority span strong,.authority span small{display:block}.authority small{margin-top:4px;color:#527267}.two-grid{max-width:1492px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:18px}.two-grid .panel{margin-top:18px}.risk-list,.plan-list{display:grid;margin-top:14px}.risk-list>div,.plan-list>div{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #e2eaf1}.risk-list>div>span:first-child{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#fff;font-weight:900}.risk-list strong,.risk-list small,.plan-list strong,.plan-list small{display:block}.risk-list small,.plan-list small{margin-top:3px;color:#71869a}.good{background:#16835a}.warn{background:#b87b19}.bad{background:#a83e4d}.plan-list>div>span:first-child{min-width:62px;padding:6px 8px;border-radius:999px;text-align:center;font-size:9px;font-weight:900}.critical{color:#9c2031;background:#ffecef}.high{color:#8a5b00;background:#fff4dc}.success-state svg{color:#16835a}.executive-summary{max-width:1492px;margin:18px auto 0;display:flex;align-items:center;gap:20px;padding:24px;border-radius:20px;color:#fff;background:linear-gradient(135deg,#07192c,#0b477c)}.executive-summary>div{margin-right:auto}.executive-summary small{color:#8fc9f7;font-weight:900;letter-spacing:.1em}.executive-summary h2{margin:6px 0}.executive-summary p{max-width:950px;margin:0;color:#d2e6f5;line-height:1.55}.disclaimer{max-width:1492px;margin:18px auto 0;color:#6b7f91;font-size:10px;line-height:1.5}.modal-backdrop{position:fixed;inset:0;z-index:900;display:grid;place-items:center;padding:18px;background:rgba(3,15,28,.82);backdrop-filter:blur(9px)}.modal{width:min(900px,100%);max-height:92vh;overflow:auto;border:1px solid #345b7c;border-radius:22px;background:#f8fbfe;box-shadow:0 30px 90px rgba(0,0,0,.45)}.modal header,.modal footer{display:flex;align-items:center;gap:12px;padding:16px 18px}.modal header{position:sticky;top:0;z-index:2;color:#fff;background:linear-gradient(135deg,#07192c,#0b477c)}.modal header>div{margin-right:auto}.modal header small{color:#9ecbf1;font-weight:900;letter-spacing:.1em}.modal header h2{margin:4px 0 0}.modal header button{width:38px;padding:0;color:#fff;background:#123a60;border-color:#476a88}.modal footer{justify-content:flex-end;border-top:1px solid #dbe6ee;background:#fff}.person-form{display:grid;grid-template-columns:180px 1fr;gap:18px;padding:22px}.photo-box{display:grid;align-content:start;gap:12px}.photo-box>span,.photo-box>img{width:150px;height:150px;display:grid;place-items:center;border-radius:24px;background:linear-gradient(135deg,#0d315c,#0a66ff);color:#fff;object-fit:cover;font-size:44px;font-weight:900}.photo-box label{display:flex;align-items:center;gap:7px;padding:10px;border:1px dashed #78abd5;border-radius:10px;color:#245475;background:#eef7ff;font-size:11px;font-weight:850;cursor:pointer}.photo-box input,.dropzone input{display:none}.person-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.import-modal>p{padding:0 22px;color:#60768b}.import-controls{display:grid;grid-template-columns:240px 1fr;gap:16px;padding:10px 22px 22px}.dropzone{min-height:190px;display:grid;place-items:center;align-content:center;gap:7px;padding:18px;border:2px dashed #79acd6;border-radius:16px;color:#285a80;background:#eef7ff;text-align:center;cursor:pointer}.dropzone small{color:#70869a}.import-controls textarea{min-height:230px;padding:12px;border:1px solid #cbdbe8;border-radius:14px;font:12px ui-monospace,monospace}.history-list{display:grid;padding:18px}.history-list article{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid #dfe8ef}.history-list article>span{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#0a66ff;background:#eaf4ff}.history-list p{margin:4px 0;color:#51687d}.history-list small{color:#8192a1}@media(max-width:980px){.hero,.two-grid{grid-template-columns:1fr}.form-grid,.qualification-grid{grid-template-columns:1fr 1fr}.wr-header{flex-wrap:wrap}.header-meta{order:5;width:100%}.roster-filters{grid-template-columns:1fr}.person-form,.import-controls{grid-template-columns:1fr}.photo-box{justify-items:center}.executive-summary{align-items:flex-start;flex-direction:column}}@media(max-width:650px){.hero{padding:18px 12px}.toolbar,.metrics{padding-left:12px;padding-right:12px}.panel,.notice,.executive-summary,.disclaimer{margin-left:12px;margin-right:12px}.form-grid,.qualification-grid,.person-fields{grid-template-columns:1fr}.brand-lockup{width:125px}.northstar-lockup{width:160px}.header-status{display:none}.hero-copy{padding:23px}.hero h1{font-size:36px}.two-grid{display:block}.toolbar button.submit{margin-left:0}.executive-summary button{width:100%}.actions{min-width:240px}}@media print{body{background:#fff}.no-print,.back,.header-status,.modal-backdrop{display:none!important}.panel,.readiness-card,.metrics article{box-shadow:none}.matrix-wrap,.roster-table{overflow:visible}table{font-size:8px}.disclaimer{display:block}}
+        *{box-sizing:border-box}body{margin:0;background:#edf3f8}.wr-shell{min-height:100vh;color:#10263a;background:#edf3f8;font-family:Inter,Arial,sans-serif}.wr-sidebar{position:fixed;inset:0 auto 0 0;width:270px;height:100vh;overflow:auto;padding:18px;color:#fff;background:linear-gradient(180deg,#061729,#0a2744 70%,#0b3155)}.wr-brand{height:58px;display:flex;align-items:center;justify-content:center;padding:7px;border-radius:13px;background:#fff}.wr-brand img{max-width:205px;max-height:45px}.wr-northstar{margin-top:8px;background:#020914}.wr-company{display:grid;gap:4px;margin:18px 0;padding:14px;border:1px solid #31536f;border-radius:13px;background:#0b2b4a}.wr-company small,.wr-side-footer small{color:#86b4da;font-size:8px;font-weight:900;letter-spacing:.13em}.wr-company strong{font-size:18px}.wr-company span{color:#bfd3e4;font-size:9px}.wr-sidebar nav{display:grid;gap:5px}.wr-sidebar nav button{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px;padding:11px;border:1px solid transparent;border-radius:10px;color:#bfd2e3;background:transparent;text-align:left;font-size:10px;font-weight:850}.wr-sidebar nav button:hover,.wr-sidebar nav button.active{color:#fff;border-color:#315777;background:#0d4a7c}.wr-side-footer{display:grid;gap:9px;margin-top:20px;padding-top:16px;border-top:1px solid #2a4b66;color:#c4d7e7;font-size:9px}.wr-side-footer span,.wr-side-footer a{display:flex;align-items:center;gap:7px}.wr-side-footer a{margin-top:5px;padding:10px;border-radius:9px;color:#fff;background:#0a66ff;text-decoration:none;font-weight:900}.wr-main{margin-left:270px}.wr-topbar{min-height:70px;display:flex;align-items:center;padding:0 24px;border-bottom:1px solid #d6e2eb;background:#fff}.wr-topbar>div:first-child{margin-right:auto}.wr-topbar small,.wr-topbar strong{display:block}.wr-topbar small{color:#698196;font-size:8px;font-weight:900;letter-spacing:.12em}.wr-topbar strong{font-size:17px}.wr-top-actions{display:flex;align-items:center;gap:9px}.wr-top-actions span{padding:7px 10px;border-radius:999px;color:#765313;background:#fff0cd;font-size:9px;font-weight:900}.wr-top-actions button,.wr-button-row button,.wr-heading button,.wr-table button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 11px;border:1px solid #bfd0df;border-radius:9px;color:#153c5f;background:#fff;font-size:9px;font-weight:900;cursor:pointer}.wr-content{max-width:1580px;margin:0 auto;padding:23px 24px 70px}.wr-notice{position:sticky;top:8px;z-index:20;display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:12px 14px;border:1px solid #7cb9ec;border-radius:12px;color:#0b4d85;background:#e9f5ff;box-shadow:0 12px 35px rgba(26,74,112,.15);font-size:10px;font-weight:850}.wr-hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,.6fr);gap:17px}.wr-hero>div:first-child{padding:30px;border-radius:23px;color:#fff;background:radial-gradient(circle at 95% 0%,rgba(68,211,255,.26),transparent 32%),linear-gradient(135deg,#07192c,#0b477c 62%,#0a66ff);box-shadow:0 24px 60px rgba(8,47,82,.22)}.wr-hero small,.wr-heading small{color:#8ecbff;font-size:8px;font-weight:900;letter-spacing:.13em}.wr-hero h1{max-width:900px;margin:13px 0 12px;font-size:clamp(31px,4vw,54px);line-height:1.02}.wr-hero p{max-width:900px;margin:0;color:#d6e8f6;line-height:1.65}.wr-hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}.wr-hero-actions button,.wr-hero-actions a,.wr-primary,.wr-link{display:inline-flex!important;align-items:center;justify-content:center;gap:7px;min-height:39px;padding:0 13px!important;border:1px solid #95c4eb!important;border-radius:10px!important;color:#fff!important;background:#0a66ff!important;text-decoration:none;font-size:10px!important;font-weight:900!important;cursor:pointer}.wr-hero-actions a{color:#0d3558!important;background:#fff!important}.wr-readiness-card{display:grid;place-items:center;align-content:center;padding:22px;border:1px solid #d6e3ec;border-radius:22px;background:#fff;text-align:center}.wr-readiness-card>small{color:#6b8295}.wr-ring{width:170px;height:170px;display:grid;place-items:center;margin:15px 0;border-radius:50%;background:conic-gradient(#0a66ff var(--score),#dbe7ef 0)}.wr-ring>div{width:132px;height:132px;display:grid;place-items:center;align-content:center;border-radius:50%;background:#fff}.wr-ring strong,.wr-ring span{display:block}.wr-ring strong{font-size:41px}.wr-ring span{color:#6c8397;font-size:9px}.wr-readiness-card b{color:#a5670b}.wr-readiness-card em{margin-top:5px;color:#687f93;font-size:8px}.wr-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:11px;margin-top:15px}.wr-metrics article,.wr-panel{border:1px solid #d9e4ed;border-radius:17px;background:#fff;box-shadow:0 11px 28px rgba(24,53,77,.07)}.wr-metrics article{position:relative;padding:16px}.wr-metrics article>span{position:absolute;right:14px;top:14px;width:36px;height:36px;display:grid;place-items:center;border-radius:11px;color:#0a66ff;background:#e8f2ff}.wr-metrics small,.wr-metrics strong,.wr-metrics em{display:block}.wr-metrics small{color:#6e8598;font-size:8px;font-weight:900;text-transform:uppercase}.wr-metrics strong{margin-top:8px;font-size:27px}.wr-metrics em{margin-top:4px;color:#657c90;font-size:8px}.wr-grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}.wr-panel{padding:19px;margin-bottom:16px}.wr-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:15px}.wr-heading h2{margin:5px 0 0}.wr-heading p{margin:5px 0 0;color:#62798d;font-size:10px;line-height:1.5}.wr-heading>svg{color:#0a66ff}.wr-button-row{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.wr-flow{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.wr-flow div{position:relative;min-height:112px;padding:12px;border:1px solid #d8e4ed;border-radius:13px;background:#f8fbfd}.wr-flow div:after{content:'›';position:absolute;right:-8px;top:42%;z-index:2;color:#0a66ff;font-size:22px;font-weight:900}.wr-flow div:last-child:after{display:none}.wr-flow span,.wr-flow strong,.wr-flow small{display:block}.wr-flow span{color:#0a66ff;font-weight:950}.wr-flow strong{margin-top:8px}.wr-flow small{margin-top:5px;color:#657d91;font-size:8px;line-height:1.45}.wr-bars{display:grid;gap:13px}.wr-bars>div>span{display:flex;justify-content:space-between;font-size:10px}.wr-bars em{font-style:normal;font-weight:900}.wr-bars i{height:10px;display:block;margin-top:6px;overflow:hidden;border-radius:999px;background:#e3edf4}.wr-bars b{height:100%;display:block;border-radius:999px;background:linear-gradient(90deg,#0a66ff,#45cfff)}.wr-action-list,.wr-feed,.wr-evaluations,.wr-levels{display:grid;gap:9px}.wr-action-list>div{display:grid;grid-template-columns:auto 1fr;gap:4px 9px;padding:11px;border-bottom:1px solid #e3ebf1}.wr-action-list span{grid-row:1/3;align-self:center;padding:5px 7px;border-radius:999px;font-size:8px;font-weight:900}.wr-action-list small{color:#6c8295;font-size:8px}.good{color:#176748!important;background:#e4f7ee!important}.warn{color:#85540b!important;background:#fff0d4!important}.bad{color:#922d3a!important;background:#ffe5e9!important}.blue{color:#175c91!important;background:#e7f3fc!important}.wr-feed{grid-template-columns:repeat(2,1fr)}.wr-feed>div{padding:13px;border:1px solid #dbe6ee;border-radius:12px;background:#f8fbfd}.wr-feed strong,.wr-feed span{display:block}.wr-feed span{margin-top:4px;color:#687f93;font-size:8px}.wr-link{margin-top:13px}.wr-filters{display:grid;grid-template-columns:minmax(260px,1fr) 220px;gap:10px;margin-bottom:13px}.wr-filters label,.wr-search{display:flex;align-items:center;gap:8px;padding:0 11px;border:1px solid #c9d8e4;border-radius:10px;background:#fff}.wr-filters input,.wr-search input{border:0!important;padding-left:0!important}.wr-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.wr-form-grid label{display:grid;gap:6px;color:#49657c;font-size:9px;font-weight:850}.wr-form-grid .full{grid-column:1/-1}input,select,textarea{width:100%;padding:10px 11px;border:1px solid #c7d7e3;border-radius:9px;color:#153149;background:#fff;font:inherit;outline:none}textarea{min-height:88px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:#0a66ff;box-shadow:0 0 0 3px rgba(10,102,255,.11)}.wr-table{overflow:auto;border:1px solid #d8e4ed;border-radius:13px}.wr-table table{width:100%;border-collapse:collapse;min-width:900px}.wr-table th,.wr-table td{padding:10px;border-bottom:1px solid #e2eaf0;text-align:left;font-size:9px}.wr-table th{color:#526d82;background:#f2f7fb;font-size:8px;text-transform:uppercase}.wr-tag{display:inline-flex;padding:5px 7px;border-radius:999px;font-size:8px;font-weight:900}.wr-impact{display:flex;gap:12px;margin-top:15px;padding:14px;border-left:4px solid #0a66ff;border-radius:11px;color:#174d78;background:#e9f5ff}.wr-impact p{margin:5px 0 0;font-size:9px;line-height:1.55}.wr-step-list{display:grid;gap:12px}.wr-step-list article{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px;border:1px solid #d8e4ed;border-radius:14px;background:#f8fbfd}.wr-step-number{width:40px;height:40px;display:grid;place-items:center;border-radius:11px;color:#fff;background:#0a66ff;font-weight:950}.wr-evaluations>div{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #dce6ed;border-radius:12px}.wr-evaluations span{margin-right:auto}.wr-evaluations strong,.wr-evaluations small{display:block}.wr-evaluations small{margin-top:4px;color:#6b8194;font-size:8px}.wr-levels>div{display:grid;grid-template-columns:38px 1fr;gap:3px 10px;padding:10px;border-bottom:1px solid #e3ebf1}.wr-levels span{grid-row:1/3;width:34px;height:34px;display:grid;place-items:center;border-radius:9px;color:#fff;background:#0a66ff;font-weight:950}.wr-levels small{color:#6a8093;font-size:8px}.wr-matrix th:not(:first-child),.wr-matrix td:not(:first-child){text-align:center}.wr-matrix td:first-child strong,.wr-matrix td:first-child small{display:block}.wr-matrix td:first-child small{margin-top:3px;color:#71879a}.wr-cell{width:32px;height:32px;display:inline-grid;place-items:center;border-radius:9px;font-weight:950}.wr-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}.wr-legend span{display:flex;align-items:center;gap:6px;color:#5e778b;font-size:8px}.wr-legend i{width:25px;height:25px;display:grid;place-items:center;border-radius:7px;font-style:normal;font-weight:900}.wr-qr{display:grid;place-items:center;gap:8px;padding:28px;border:2px dashed #a9c3d8;border-radius:15px;color:#0a66ff;background:#f5faff;text-align:center}.wr-qr span{color:#657d91;font-size:9px}.wr-search{margin-top:12px}.wr-floor-steps{display:grid;gap:10px}.wr-floor-steps>div{position:relative;padding:13px 13px 13px 52px;border:1px solid #dce6ed;border-radius:12px}.wr-floor-steps>div>span{position:absolute;left:12px;top:12px;width:30px;height:30px;display:grid;place-items:center;border-radius:8px;color:#fff;background:#0a66ff;font-weight:950}.wr-floor-steps p{margin:5px 0;color:#60788c;font-size:9px;line-height:1.5}.wr-floor-steps em{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:8px;font-style:normal;font-weight:900}.wr-modal-backdrop{position:fixed;inset:0;z-index:500;display:grid;place-items:center;padding:18px;background:rgba(3,15,27,.76);backdrop-filter:blur(8px)}.wr-modal{width:min(720px,96vw);padding:21px;border:1px solid #d4e1eb;border-radius:20px;background:#fff;box-shadow:0 30px 90px rgba(0,0,0,.38)}@media(max-width:1100px){.wr-flow{grid-template-columns:repeat(3,1fr)}.wr-flow div:nth-child(3):after{display:none}}@media(max-width:850px){.wr-sidebar{position:static;width:auto;height:auto}.wr-main{margin-left:0}.wr-sidebar nav{grid-template-columns:repeat(2,1fr)}.wr-side-footer{display:none}.wr-hero,.wr-grid-two{grid-template-columns:1fr}.wr-form-grid{grid-template-columns:1fr}.wr-form-grid .full{grid-column:auto}.wr-topbar{align-items:flex-start;gap:10px;padding:14px;flex-direction:column}.wr-top-actions{width:100%;justify-content:space-between}.wr-content{padding:14px}.wr-flow{grid-template-columns:1fr}.wr-flow div:after{display:none}.wr-filters{grid-template-columns:1fr}.wr-feed{grid-template-columns:1fr}}
       `}</style>
     </main>
   );
