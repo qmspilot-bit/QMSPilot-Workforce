@@ -40,7 +40,7 @@ function money(value: unknown) {
 const demonstration: CommandPayload = {
   events: [
     { severity: "critical", financial_exposure: 28200, revenue_exposure: 180000 },
-    { severity: "critical", financial_exposure: 5600, revenue_exposure: 306000 },
+    { severity: "critical", financial_exposure: 5600, revenue_exposure: 290000 },
     { severity: "critical", financial_exposure: 62000, revenue_exposure: 180000 },
   ],
   actions: [{ action_status: "in_progress" }, { action_status: "blocked" }],
