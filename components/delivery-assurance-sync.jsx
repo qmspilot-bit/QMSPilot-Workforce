@@ -82,6 +82,18 @@ export default function DeliveryAssuranceSync() {
     let cancelled = false;
     const recordId = draftRecordId(cloud.user.id);
 
+    function showSyncedNotice() {
+      window.setTimeout(() => {
+        const notice = document.querySelector(".notice");
+        if (!notice?.textContent?.includes("saved on this device")) return;
+        const textNode = Array.from(notice.childNodes)
+          .find((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim());
+        if (textNode) {
+          textNode.textContent = " Delivery Assurance workspace saved locally and synced to Northstar Secure.";
+        }
+      }, 0);
+    }
+
     async function pushDraft(draft) {
       if (!draft || writing.current) return;
       writing.current = true;
@@ -111,7 +123,11 @@ export default function DeliveryAssuranceSync() {
             updated_at: now,
           }, { onConflict: "record_id" });
 
-        if (error) console.error("Delivery Assurance cloud draft sync failed", error);
+        if (error) {
+          console.error("Delivery Assurance cloud draft sync failed", error);
+        } else {
+          showSyncedNotice();
+        }
       } finally {
         writing.current = false;
       }
@@ -146,6 +162,21 @@ export default function DeliveryAssuranceSync() {
       return false;
     }
 
+    async function syncLocalDraft() {
+      if (!initialized.current || writing.current) return;
+      const localRaw = window.localStorage.getItem(DRAFT_KEY);
+      if (!localRaw || localRaw === lastLocalValue.current) return;
+
+      const localDraft = parseDraft(localRaw);
+      if (!localDraft) return;
+
+      const normalized = normalizeDraft(localDraft);
+      const normalizedRaw = JSON.stringify(normalized);
+      lastLocalValue.current = normalizedRaw;
+      window.localStorage.setItem(DRAFT_KEY, normalizedRaw);
+      await pushDraft(normalized);
+    }
+
     async function reconcile() {
       const localRaw = window.localStorage.getItem(DRAFT_KEY);
       const localDraft = parseDraft(localRaw);
@@ -170,18 +201,7 @@ export default function DeliveryAssuranceSync() {
     void reconcile();
 
     const localTimer = window.setInterval(() => {
-      if (!initialized.current || writing.current) return;
-      const localRaw = window.localStorage.getItem(DRAFT_KEY);
-      if (!localRaw || localRaw === lastLocalValue.current) return;
-
-      const localDraft = parseDraft(localRaw);
-      if (!localDraft) return;
-
-      const normalized = normalizeDraft(localDraft);
-      const normalizedRaw = JSON.stringify(normalized);
-      lastLocalValue.current = normalizedRaw;
-      window.localStorage.setItem(DRAFT_KEY, normalizedRaw);
-      void pushDraft(normalized);
+      void syncLocalDraft();
     }, SYNC_INTERVAL_MS);
 
     const cloudTimer = window.setInterval(() => {
@@ -192,13 +212,24 @@ export default function DeliveryAssuranceSync() {
     const handleFocus = () => {
       if (initialized.current && !writing.current) void pullDraft({ allowReload: true });
     };
+
+    const handleSaveClick = (event) => {
+      const target = event.target instanceof Element ? event.target.closest("button") : null;
+      if (target?.textContent?.trim() !== "Save draft") return;
+      window.setTimeout(() => {
+        void syncLocalDraft();
+      }, 0);
+    };
+
     window.addEventListener("focus", handleFocus);
+    document.addEventListener("click", handleSaveClick, true);
 
     return () => {
       cancelled = true;
       window.clearInterval(localTimer);
       window.clearInterval(cloudTimer);
       window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("click", handleSaveClick, true);
     };
   }, [cloud.status, cloud.organizationId, cloud.organizationName, cloud.user?.id]);
 
