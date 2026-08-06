@@ -6,6 +6,7 @@ import { NorthstarApplicationChrome } from "@/components/northstar-application-c
 import { NorthstarMotionSystem } from "@/components/northstar-motion-system";
 import { NorthstarPhotographicBrandSync } from "@/components/northstar-photographic-brand-sync";
 import { NorthstarNavigationSync } from "@/components/northstar-navigation-sync";
+import NorthstarPersistenceGate from "@/components/northstar-persistence-gate";
 import { ProcessAssuranceCloudBridge } from "@/components/process-assurance-cloud-bridge";
 import { SixSAuditSystem } from "@/components/six-s-audit-system";
 import { SixSPlatformSync } from "@/components/six-s-platform-sync";
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           <NorthstarNavigationSync />
           <SixSPlatformSync />
           <NorthstarApplicationChrome />
-          {children}
+          <NorthstarPersistenceGate>{children}</NorthstarPersistenceGate>
           <SixSAuditSystem />
           <ProcessAssuranceCloudBridge />
         </CloudWorkspaceProvider>
