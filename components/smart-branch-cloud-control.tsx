@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 const RECORDS_KEY = "qmspilot:northstar:smart-branch-records";
 const TOOL_IDS = ["01.01", "02.01", "03.01", "04.01", "05.01", "06.01", "07.01", "08.01"] as const;
 const draftKey = (toolId: string) => `qmspilot:smart-branch:draft:${toolId}`;
+const LOCAL_SCAN_MS = 1_500;
+const REMOTE_SCAN_MS = 12_000;
 
 type BranchRecord = Record<string, unknown>;
 type SyncState = "checking" | "ready" | "syncing" | "success" | "empty" | "signed-out" | "error";
@@ -38,6 +40,13 @@ function readDrafts() {
     .filter((item): item is { toolId: typeof TOOL_IDS[number]; payload: BranchRecord } => Boolean(item.payload));
 }
 
+function localFingerprint() {
+  return JSON.stringify({
+    records: window.localStorage.getItem(RECORDS_KEY) || "[]",
+    drafts: TOOL_IDS.map(toolId => window.localStorage.getItem(draftKey(toolId)) || ""),
+  });
+}
+
 function recordId(record: BranchRecord) {
   return String(record.recordId || "").trim();
 }
@@ -66,64 +75,37 @@ function refreshLocalDashboards() {
 
 export default function SmartBranchCloudControl() {
   const [state, setState] = useState<SyncState>("checking");
-  const [message, setMessage] = useState("Checking this device…");
+  const [message, setMessage] = useState("Starting automatic Smart Branch sync…");
   const running = useRef(false);
+  const mounted = useRef(true);
+  const lastFingerprint = useRef("");
 
-  useEffect(() => {
-    let active = true;
-
-    async function inspect() {
-      const supabase = createClient();
-      if (!supabase) {
-        if (active) {
-          setState("error");
-          setMessage("Northstar Secure is not configured.");
-        }
-        return;
-      }
-
-      const { data, error } = await supabase.auth.getUser();
-      if (!active) return;
-      if (error || !data.user) {
-        setState("signed-out");
-        setMessage("Sign in to Northstar before syncing Smart Branch.");
-        return;
-      }
-
-      const localRecordCount = readRecords().length;
-      const localDraftCount = readDrafts().length;
-      setState(localRecordCount || localDraftCount ? "ready" : "empty");
-      setMessage(
-        localRecordCount || localDraftCount
-          ? `This device has ${localRecordCount} dashboard record${localRecordCount === 1 ? "" : "s"} and ${localDraftCount} draft${localDraftCount === 1 ? "" : "s"} ready to sync.`
-          : "No Smart Branch records or drafts are stored on this device."
-      );
-    }
-
-    void inspect();
-    return () => { active = false; };
-  }, []);
-
-  const syncNow = useCallback(async () => {
+  const syncNow = useCallback(async (quiet = false) => {
     if (running.current) return;
     running.current = true;
 
     const supabase = createClient();
     if (!supabase) {
-      setState("error");
-      setMessage("Northstar Secure is not configured.");
+      if (mounted.current) {
+        setState("error");
+        setMessage("Northstar Secure is not configured.");
+      }
       running.current = false;
       return;
     }
 
-    setState("syncing");
-    setMessage("Synchronizing Smart Branch once…");
+    if (!quiet && mounted.current) {
+      setState("syncing");
+      setMessage("Synchronizing Smart Branch…");
+    }
 
     try {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData.user) {
-        setState("signed-out");
-        setMessage("Sign in to Northstar before syncing Smart Branch.");
+        if (mounted.current) {
+          setState("signed-out");
+          setMessage("Sign in to Northstar to enable automatic Smart Branch sync.");
+        }
         return;
       }
 
@@ -202,36 +184,79 @@ export default function SmartBranchCloudControl() {
         }
       }
 
+      lastFingerprint.current = localFingerprint();
       refreshLocalDashboards();
 
       const recordCount = mergedRecords.length;
       const draftCount = (draftResult.data || []).length;
-      if (!recordCount && !draftCount) {
-        setState("empty");
-        setMessage("No Smart Branch records or drafts were found on this device or in Northstar Secure.");
-      } else {
-        setState("success");
-        setMessage(`${recordCount} dashboard record${recordCount === 1 ? "" : "s"} and ${draftCount} draft${draftCount === 1 ? "" : "s"} synchronized successfully.`);
+      if (mounted.current) {
+        if (!recordCount && !draftCount) {
+          setState("empty");
+          setMessage("Automatic sync is active. No Smart Branch records or drafts exist yet.");
+        } else {
+          setState("success");
+          setMessage(`Automatic sync active · ${recordCount} dashboard record${recordCount === 1 ? "" : "s"} · ${draftCount} draft${draftCount === 1 ? "" : "s"}.`);
+        }
       }
     } catch (error) {
-      setState("error");
-      setMessage(error instanceof Error ? error.message : "Smart Branch synchronization failed.");
+      if (mounted.current) {
+        setState("error");
+        setMessage(error instanceof Error ? error.message : "Smart Branch automatic synchronization failed.");
+      }
     } finally {
       running.current = false;
     }
   }, []);
+
+  useEffect(() => {
+    mounted.current = true;
+    lastFingerprint.current = localFingerprint();
+    void syncNow(true);
+
+    const localTimer = window.setInterval(() => {
+      const next = localFingerprint();
+      if (next === lastFingerprint.current) return;
+      lastFingerprint.current = next;
+      void syncNow(true);
+    }, LOCAL_SCAN_MS);
+
+    const remoteTimer = window.setInterval(() => void syncNow(true), REMOTE_SCAN_MS);
+    const afterSubmit = () => window.setTimeout(() => void syncNow(true), 100);
+    const afterReconnect = () => void syncNow(true);
+    const afterFocus = () => void syncNow(true);
+    const afterVisibility = () => {
+      if (document.visibilityState === "visible") void syncNow(true);
+    };
+
+    window.addEventListener("qmspilot:smart-branch-record-submitted", afterSubmit);
+    window.addEventListener("online", afterReconnect);
+    window.addEventListener("focus", afterFocus);
+    document.addEventListener("visibilitychange", afterVisibility);
+
+    return () => {
+      mounted.current = false;
+      window.clearInterval(localTimer);
+      window.clearInterval(remoteTimer);
+      window.removeEventListener("qmspilot:smart-branch-record-submitted", afterSubmit);
+      window.removeEventListener("online", afterReconnect);
+      window.removeEventListener("focus", afterFocus);
+      document.removeEventListener("visibilitychange", afterVisibility);
+    };
+  }, [syncNow]);
 
   const Icon = state === "success" ? CheckCircle2 : state === "error" || state === "signed-out" ? AlertTriangle : Cloud;
 
   return (
     <aside className={`smart-branch-cloud-control ${state}`} aria-live="polite">
       <div><Icon size={18} /><span><small>SMART BRANCH CLOUD</small><strong>{message}</strong></span></div>
-      <button type="button" onClick={() => void syncNow()} disabled={state === "syncing"}>
-        <RefreshCw size={15} className={state === "syncing" ? "spin" : ""} />
-        {state === "syncing" ? "Syncing once…" : "Sync Smart Branch now"}
-      </button>
+      {(state === "error" || state === "signed-out") && (
+        <button type="button" onClick={() => void syncNow(false)} disabled={state === "syncing"}>
+          <RefreshCw size={15} className={state === "syncing" ? "spin" : ""} />
+          {state === "syncing" ? "Retrying…" : "Retry sync"}
+        </button>
+      )}
       <style>{`
-        .smart-branch-cloud-control{position:fixed;right:14px;bottom:72px;z-index:490;width:min(430px,calc(100vw - 28px));padding:12px;border:1px solid #9fc5e5;border-radius:14px;background:rgba(246,251,255,.98);box-shadow:0 18px 48px rgba(12,53,88,.25);font-family:Inter,Arial,sans-serif}.smart-branch-cloud-control>div{display:flex;align-items:center;gap:9px;color:#174d78}.smart-branch-cloud-control span{min-width:0}.smart-branch-cloud-control small,.smart-branch-cloud-control strong{display:block}.smart-branch-cloud-control small{font-size:8px;font-weight:950;letter-spacing:.12em}.smart-branch-cloud-control strong{margin-top:3px;font-size:10px;line-height:1.35}.smart-branch-cloud-control button{width:100%;min-height:38px;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:9px;border:0;border-radius:9px;color:#fff;background:#0a66ff;font-size:9px;font-weight:900;cursor:pointer}.smart-branch-cloud-control button:disabled{opacity:.65}.smart-branch-cloud-control.success{border-color:#8bc7aa;background:rgba(241,255,248,.98)}.smart-branch-cloud-control.success>div{color:#176747}.smart-branch-cloud-control.error,.smart-branch-cloud-control.signed-out{border-color:#e2a2aa;background:rgba(255,246,247,.98)}.smart-branch-cloud-control.error>div,.smart-branch-cloud-control.signed-out>div{color:#8f2936}.smart-branch-cloud-control.empty{border-color:#e2bf78;background:rgba(255,251,240,.98)}.smart-branch-cloud-control.empty>div{color:#80540c}.spin{animation:smartBranchSpin 1s linear infinite}@keyframes smartBranchSpin{to{transform:rotate(360deg)}}@media(max-width:700px){.smart-branch-cloud-control{right:10px;bottom:76px;width:calc(100vw - 20px)}}
+        .smart-branch-cloud-control{position:fixed;right:14px;bottom:72px;z-index:490;width:min(430px,calc(100vw - 28px));padding:10px 12px;border:1px solid #9fc5e5;border-radius:14px;background:rgba(246,251,255,.98);box-shadow:0 14px 38px rgba(12,53,88,.2);font-family:Inter,Arial,sans-serif}.smart-branch-cloud-control>div{display:flex;align-items:center;gap:9px;color:#174d78}.smart-branch-cloud-control span{min-width:0}.smart-branch-cloud-control small,.smart-branch-cloud-control strong{display:block}.smart-branch-cloud-control small{font-size:8px;font-weight:950;letter-spacing:.12em}.smart-branch-cloud-control strong{margin-top:3px;font-size:10px;line-height:1.35}.smart-branch-cloud-control button{width:100%;min-height:36px;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:8px;border:0;border-radius:9px;color:#fff;background:#0a66ff;font-size:9px;font-weight:900;cursor:pointer}.smart-branch-cloud-control button:disabled{opacity:.65}.smart-branch-cloud-control.success{border-color:#8bc7aa;background:rgba(241,255,248,.96)}.smart-branch-cloud-control.success>div{color:#176747}.smart-branch-cloud-control.error,.smart-branch-cloud-control.signed-out{border-color:#e2a2aa;background:rgba(255,246,247,.98)}.smart-branch-cloud-control.error>div,.smart-branch-cloud-control.signed-out>div{color:#8f2936}.smart-branch-cloud-control.empty{border-color:#b9cfdf;background:rgba(247,251,255,.96)}.smart-branch-cloud-control.empty>div{color:#285674}.spin{animation:smartBranchSpin 1s linear infinite}@keyframes smartBranchSpin{to{transform:rotate(360deg)}}@media(max-width:700px){.smart-branch-cloud-control{right:10px;bottom:76px;width:calc(100vw - 20px)}}
       `}</style>
     </aside>
   );
