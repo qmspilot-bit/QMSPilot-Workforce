@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import SmartBranchSync from "@/components/smart-branch-sync";
+import SmartBranchCloudControl from "@/components/smart-branch-cloud-control";
 
 export default function SmartBranchLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <SmartBranchSync />
+      <SmartBranchCloudControl />
       {children}
     </>
   );
