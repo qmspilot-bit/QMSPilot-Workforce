@@ -11,7 +11,7 @@ const primaryItems = [
 ];
 
 function isPrimaryNav(nav: HTMLElement) {
-  if (nav.classList.contains("northstar-quick-actions")) return false;
+  if (nav.classList.contains("northstar-quick-actions") || nav.classList.contains("northstar-primary-nav")) return false;
   const hrefs = Array.from(nav.querySelectorAll<HTMLAnchorElement>("a")).map(link => link.getAttribute("href"));
   return hrefs.includes("/") && (hrefs.includes("/toolbox") || hrefs.includes("/dashboard") || hrefs.includes("/my-actions"));
 }
