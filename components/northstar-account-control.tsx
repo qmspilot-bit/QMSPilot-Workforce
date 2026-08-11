@@ -20,7 +20,7 @@ function initials(value: string) {
 const links = [
   ["/", "Home", "What needs attention now", Home],
   ["/toolbox", "Work", "Open a workspace or controlled tool", BriefcaseBusiness],
-  ["/dashboard", "My Actions", "Owners, dates, evidence, closure", ListChecks],
+  ["/my-actions", "My Actions", "What you own, what is due, what needs closure", ListChecks],
   ["/executive-intelligence", "Leadership", "Business health, risk, and priorities", BarChart3],
 ] as const;
 
