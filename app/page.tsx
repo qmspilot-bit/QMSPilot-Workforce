@@ -11,7 +11,7 @@ const priorities = [
 
 const primary = [
   { title: "Work", note: "Open the workspace where the job gets done.", href: "/toolbox", icon: BriefcaseBusiness, action: "Start or continue work" },
-  { title: "My Actions", note: "See what you own, what is due, and what needs closure.", href: "/dashboard", icon: ListChecks, action: "Review my commitments" },
+  { title: "My Actions", note: "See what you own, what is due, and what needs closure.", href: "/my-actions", icon: ListChecks, action: "Review my commitments" },
   { title: "Leadership", note: "See risk, readiness, performance, and business priorities.", href: "/executive-intelligence", icon: BarChart3, action: "Open leadership view" },
 ];
 
@@ -25,7 +25,7 @@ export default function Home() {
         <nav>
           <a className="active" href="/">Home</a>
           <a href="/toolbox">Work</a>
-          <a href="/dashboard">My Actions</a>
+          <a href="/my-actions">My Actions</a>
           <a href="/executive-intelligence">Leadership</a>
         </nav>
         <div className="system-status">
@@ -75,7 +75,7 @@ export default function Home() {
                   </article>
                 ))}
               </div>
-              <a className="panel-link" href="/dashboard">Open My Actions <ArrowRight size={15}/></a>
+              <a className="panel-link" href="/my-actions">Open My Actions <ArrowRight size={15}/></a>
             </article>
 
             <article className="panel simple-flow">
@@ -88,7 +88,7 @@ export default function Home() {
 
           <section className="advanced">
             <div><ShieldCheck size={20}/><span><small>ADVANCED NORTHSTAR VIEWS</small><strong>Available when you need deeper system context.</strong></span></div>
-            <div><a href="/workforce-operations"><BrainCircuit size={15}/> AI Workforce</a><a href="/entity-graph"><Database size={15}/> Entity Graph</a></div>
+            <div><a href="/workforce-operations"><BrainCircuit size={15}/> AI Workforce</a><a href="/entity-graph"><Database size={15}/> Entity Graph</a><a href="/dashboard"><ListChecks size={15}/> Accountability</a></div>
           </section>
         </div>
       </section>
