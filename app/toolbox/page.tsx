@@ -45,7 +45,7 @@ export default function ToolboxPage() {
       <aside>
         <div className="logo"><img src={QMSPILOT_LOGO_DATA_URI} alt="QMSPilot" /></div>
         <div className="northstar"><img src={NORTHSTAR_LOGO_DATA_URI} alt="Northstar" /></div>
-        <nav><a href="/">Home</a><a className="active" href="/toolbox">Work</a><a href="/dashboard">My Actions</a><a href="/executive-intelligence">Leadership</a></nav>
+        <nav><a href="/">Home</a><a className="active" href="/toolbox">Work</a><a href="/my-actions">My Actions</a><a href="/executive-intelligence">Leadership</a></nav>
         <div className="boundary"><ShieldCheck size={18}/><span>Choose the area where the work happens. Northstar handles the connected intelligence underneath.</span></div>
       </aside>
 
