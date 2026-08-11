@@ -1,3 +1,5 @@
+"use client";
+
 import { BarChart3, BriefcaseBusiness, Home, ListChecks, ShieldCheck } from "lucide-react";
 import { NORTHSTAR_LOGO_DATA_URI, QMSPILOT_LOGO_DATA_URI } from "@/lib/northstar-brand-assets";
 
