@@ -1,31 +1,53 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
+const primaryItems = [
+  { href: "/", label: "Home" },
+  { href: "/toolbox", label: "Work" },
+  { href: "/dashboard", label: "My Actions" },
+  { href: "/executive-intelligence", label: "Leadership" },
+];
+
+function isPrimaryNav(nav: HTMLElement) {
+  if (nav.classList.contains("northstar-quick-actions")) return false;
+  const hrefs = Array.from(nav.querySelectorAll<HTMLAnchorElement>("a")).map(link => link.getAttribute("href"));
+  return hrefs.includes("/") && (hrefs.includes("/toolbox") || hrefs.includes("/dashboard"));
+}
+
+function activeHref(pathname: string) {
+  if (pathname === "/") return "/";
+  if (pathname === "/dashboard") return "/dashboard";
+  if (pathname === "/executive-intelligence" || pathname.startsWith("/workforce-operations") || pathname.startsWith("/entity-graph")) {
+    return "/executive-intelligence";
+  }
+  if (pathname === "/toolbox" || pathname.startsWith("/smart-") || pathname.startsWith("/tools/")) return "/toolbox";
+  return "";
+}
+
 export function NorthstarNavigationSync() {
+  const pathname = usePathname();
+
   useEffect(() => {
+    const active = activeHref(pathname);
+
     const syncNavigation = () => {
-      document.querySelectorAll("nav").forEach((nav) => {
-        const links = Array.from(nav.querySelectorAll<HTMLAnchorElement>("a"));
-        const commandLink = links.find((link) => link.getAttribute("href") === "/" && link.textContent?.includes("Command Center"));
-        const workspaceLink = links.find((link) => link.getAttribute("href") === "/toolbox");
-        if (!commandLink || !workspaceLink) return;
+      document.querySelectorAll<HTMLElement>("nav").forEach(nav => {
+        if (!isPrimaryNav(nav)) return;
 
-        workspaceLink.childNodes.forEach((node) => {
-          if (node.nodeType === Node.TEXT_NODE && node.textContent?.includes("Digital Toolbox")) {
-            node.textContent = node.textContent.replace("Digital Toolbox", "Workspaces");
-          }
+        const signature = `${pathname}:${primaryItems.map(item => item.label).join("|")}`;
+        if (nav.dataset.northstarPrimaryNav === signature) return;
+
+        nav.innerHTML = "";
+        primaryItems.forEach(item => {
+          const link = document.createElement("a");
+          link.href = item.href;
+          link.textContent = item.label;
+          if (item.href === active) link.className = "active";
+          nav.appendChild(link);
         });
-        if (workspaceLink.textContent?.trim() === "Digital Toolbox") workspaceLink.textContent = "Workspaces";
-
-        const existingIntelligence = links.find((link) => link.getAttribute("href") === "/executive-intelligence");
-        if (!existingIntelligence) {
-          const intelligenceLink = document.createElement("a");
-          intelligenceLink.href = "/executive-intelligence";
-          intelligenceLink.textContent = "Executive Intelligence";
-          if (window.location.pathname === "/executive-intelligence") intelligenceLink.className = "active";
-          commandLink.insertAdjacentElement("afterend", intelligenceLink);
-        }
+        nav.dataset.northstarPrimaryNav = signature;
       });
     };
 
@@ -33,7 +55,7 @@ export function NorthstarNavigationSync() {
     const observer = new MutationObserver(syncNavigation);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, []);
+  }, [pathname]);
 
   return null;
 }
