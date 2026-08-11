@@ -1,6 +1,6 @@
-import { ArrowRight, BarChart3, BrainCircuit, BriefcaseBusiness, CheckCircle2, Database, ListChecks, ShieldCheck } from "lucide-react";
+import { ArrowRight, BarChart3, Boxes, BrainCircuit, Building2, CheckCircle2, ClipboardCheck, Database, Network, ShieldCheck, Truck } from "lucide-react";
 import { LiveCommandMetrics } from "@/components/live-command-metrics";
-import { NORTHSTAR_LOGO_DATA_URI, QMSPILOT_LOGO_DATA_URI } from "@/lib/northstar-brand-assets";
+import { NorthstarPrimaryRail } from "@/components/northstar-primary-rail";
 
 const priorities = [
   ["Critical", "Approve the integrated customer-recovery command plan", "Pilot", "$180K revenue exposure"],
@@ -9,92 +9,117 @@ const priorities = [
   ["High", "Authorize alternate supplier recovery path", "Pilot + Ledger", "$126K order exposure"],
 ];
 
-const primary = [
-  { title: "Work", note: "Open the workspace where the job gets done.", href: "/toolbox", icon: BriefcaseBusiness, action: "Start or continue work" },
-  { title: "My Actions", note: "See what you own, what is due, and what needs closure.", href: "/my-actions", icon: ListChecks, action: "Review my commitments" },
-  { title: "Leadership", note: "See risk, readiness, performance, and business priorities.", href: "/executive-intelligence", icon: BarChart3, action: "Open leadership view" },
+const smartLaunch = [
+  ["Smart Operations", "Production, handoffs, downtime and daily execution", "/smart-operations", BarChart3],
+  ["Smart Quality", "Inspection, NCR, CAPA, audits and quality control", "/smart-quality", ClipboardCheck],
+  ["Smart Branch", "Customer promises, VMI, inventory and accountability", "/smart-branch", Building2],
+  ["Smart Delivery", "Shipment readiness, release, POD and exceptions", "/smart-delivery", Truck],
+  ["Smart Warehouse", "Receiving, material flow, inventory and shipping", "/smart-warehouse", Boxes],
+];
+
+const agents = [
+  ["Pilot", "Chief of Staff", "READY"],
+  ["Atlas", "Accountability", "READY"],
+  ["Forge", "Root Cause & Operations", "READY"],
+  ["Sentinel", "Evidence & Compliance", "READY"],
+  ["Beacon", "Customer Intelligence", "READY"],
+  ["Ledger", "Financial Intelligence", "READY"],
 ];
 
 export default function Home() {
   return (
-    <main className="home-shell">
-      <aside className="home-sidebar">
-        <div className="logo-card"><img src={QMSPILOT_LOGO_DATA_URI} alt="QMSPilot" /></div>
-        <div className="northstar-card"><img src={NORTHSTAR_LOGO_DATA_URI} alt="Northstar" /></div>
-        <div className="pilot-card"><span>PI</span><div><strong>Pilot</strong><small>Ready to help</small></div></div>
-        <nav>
-          <a className="active" href="/">Home</a>
-          <a href="/toolbox">Work</a>
-          <a href="/my-actions">My Actions</a>
-          <a href="/executive-intelligence">Leadership</a>
-        </nav>
-        <div className="system-status">
-          <small>NORTHSTAR STATUS</small>
-          <span>● Secure workspace online</span>
-          <span>● Cross-device persistence active</span>
-          <span>● Human authority preserved</span>
-        </div>
-      </aside>
+    <main className="enterprise-shell">
+      <NorthstarPrimaryRail active="home" />
 
-      <section className="home-main">
-        <header className="command-topbar">
-          <div><small>QMSPILOT NORTHSTAR</small><strong>Home</strong></div>
-          <span className="connected">Connected · Secure</span>
+      <section className="enterprise-main">
+        <header className="command-topbar enterprise-topbar">
+          <div><small>NORTHSTAR / HOME</small><strong>Executive Operating Console</strong></div>
+          <span className="secure-state"><i /> Connected · Northstar Secure</span>
         </header>
 
-        <div className="home-content">
-          <section className="welcome">
-            <div>
-              <small>WELCOME BACK</small>
-              <h1>Start with what needs your attention.</h1>
-              <p>Northstar keeps the complexity underneath. You focus on the work, the commitments you own, and the decisions that matter.</p>
+        <div className="enterprise-content">
+          <section className="pilot-briefing">
+            <div className="pilot-mark"><BrainCircuit size={24} /></div>
+            <div className="pilot-copy">
+              <small>PILOT BRIEFING</small>
+              <h1>Four priorities require attention. Two carry direct customer or revenue exposure.</h1>
+              <p>Start with assigned actions, then move into the source workspace. Northstar keeps ownership, evidence, and closure connected underneath.</p>
             </div>
-            <div className="pilot-guidance"><BrainCircuit size={24}/><div><small>PILOT</small><strong>Use My Actions first when you are not sure where to start.</strong><span>It brings ownership, due dates, evidence, and closure into one place.</span></div></div>
-          </section>
-
-          <section className="primary-grid">
-            {primary.map(({ title, note, href, icon: Icon, action }) => (
-              <a href={href} className="primary-card" key={title}>
-                <span><Icon size={24}/></span>
-                <div><h2>{title}</h2><p>{note}</p><b>{action} <ArrowRight size={15}/></b></div>
-              </a>
-            ))}
+            <div className="pilot-actions">
+              <a className="primary" href="/my-actions">Review My Actions <ArrowRight size={15} /></a>
+              <a href="/workforce-operations">Decision queue</a>
+            </div>
           </section>
 
           <LiveCommandMetrics />
 
-          <section className="two-grid">
-            <article className="panel">
-              <div className="panel-heading"><div><small>NEEDS ATTENTION</small><h2>Leadership priorities</h2></div><ListChecks size={23}/></div>
-              <div className="priority-list">
+          <section className="console-grid">
+            <article className="enterprise-panel priorities-panel">
+              <div className="panel-title"><div><small>NEEDS ATTENTION</small><h2>Leadership priorities</h2></div><ClipboardCheck size={20} /></div>
+              <div className="priority-table">
                 {priorities.map(([level, title, owner, value]) => (
-                  <article key={title}>
+                  <div className="priority-row" key={title}>
                     <span className={`severity ${level.toLowerCase()}`}>{level}</span>
                     <div><strong>{title}</strong><small>{owner}</small></div>
                     <b>{value}</b>
-                  </article>
+                    <a href="/my-actions" aria-label={`Open ${title}`}><ArrowRight size={14}/></a>
+                  </div>
                 ))}
               </div>
-              <a className="panel-link" href="/my-actions">Open My Actions <ArrowRight size={15}/></a>
             </article>
 
-            <article className="panel simple-flow">
-              <div className="panel-heading"><div><small>HOW NORTHSTAR WORKS</small><h2>Keep the user journey simple.</h2></div><CheckCircle2 size={23}/></div>
-              <div className="flow-step"><span>1</span><div><strong>Do the work</strong><p>Enter the workspace where the activity belongs.</p></div></div>
-              <div className="flow-step"><span>2</span><div><strong>Own the action</strong><p>Track commitments, evidence, dates, and closure in My Actions.</p></div></div>
-              <div className="flow-step"><span>3</span><div><strong>Lead from the signal</strong><p>Use Leadership for risk, performance, and business decisions.</p></div></div>
+            <article className="enterprise-panel readiness-panel">
+              <div className="panel-title"><div><small>OPERATING HEALTH</small><h2>Closed-loop readiness</h2></div><ShieldCheck size={20} /></div>
+              <div className="readiness-score"><strong>92</strong><span>/100</span></div>
+              <div className="readiness-bar"><i /></div>
+              <ul>
+                <li><CheckCircle2 size={14}/> Secure persistence active</li>
+                <li><CheckCircle2 size={14}/> Human approval preserved</li>
+                <li><CheckCircle2 size={14}/> Evidence closure connected</li>
+              </ul>
+              <a className="text-link" href="/executive-intelligence">Open Leadership <ArrowRight size={14}/></a>
             </article>
           </section>
 
-          <section className="advanced">
-            <div><ShieldCheck size={20}/><span><small>ADVANCED NORTHSTAR VIEWS</small><strong>Available when you need deeper system context.</strong></span></div>
-            <div><a href="/workforce-operations"><BrainCircuit size={15}/> AI Workforce</a><a href="/entity-graph"><Database size={15}/> Entity Graph</a><a href="/dashboard"><ListChecks size={15}/> Accountability</a></div>
+          <section className="section-heading enterprise-section-heading">
+            <div><small>QUICK ACCESS</small><h2>Smart Workspaces</h2></div>
+            <a href="/toolbox">View all workspaces <ArrowRight size={14}/></a>
+          </section>
+          <section className="smart-launch-grid">
+            {smartLaunch.map(([title, note, href, Icon]) => (
+              <a className="smart-launch-tile" href={href as string} key={title as string}>
+                <div className="smart-launch-top"><span><Icon size={20}/></span><em>READY</em></div>
+                <strong>{title as string}</strong>
+                <p>{note as string}</p>
+                <div>Open workspace <ArrowRight size={14}/></div>
+              </a>
+            ))}
+          </section>
+
+          <section className="console-grid lower-grid">
+            <article className="enterprise-panel">
+              <div className="panel-title"><div><small>AI WORKFORCE</small><h2>Supervised specialist status</h2></div><BrainCircuit size={20} /></div>
+              <div className="agent-status-grid">
+                {agents.map(([name, role, status]) => (
+                  <div key={name}><span className="agent-dot"/><div><strong>{name}</strong><small>{role}</small></div><em>{status}</em></div>
+                ))}
+              </div>
+              <a className="text-link" href="/workforce-operations">Open AI Workforce Operations <ArrowRight size={14}/></a>
+            </article>
+
+            <article className="enterprise-panel advanced-panel">
+              <div className="panel-title"><div><small>ADVANCED VIEWS</small><h2>Platform context</h2></div><Network size={20} /></div>
+              <p>Use these views when deeper system context is needed. They are not required for everyday work.</p>
+              <a href="/entity-graph"><Database size={16}/><span><strong>Entity Graph</strong><small>Connected operating relationships</small></span><ArrowRight size={14}/></a>
+              <a href="/dashboard"><ClipboardCheck size={16}/><span><strong>Accountability</strong><small>Organization-wide owners and closure</small></span><ArrowRight size={14}/></a>
+              <a href="/workforce-operations"><BrainCircuit size={16}/><span><strong>AI Workforce</strong><small>Supervised recommendations and decisions</small></span><ArrowRight size={14}/></a>
+            </article>
           </section>
         </div>
       </section>
 
       <style>{`
-        *{box-sizing:border-box}body{margin:0;background:#edf3f8}.home-shell{min-height:100vh;color:#12263a;background:#edf3f8;font-family:Inter,Arial,sans-serif}.home-sidebar{position:fixed;inset:0 auto 0 0;width:258px;height:100vh;overflow:auto;padding:18px;color:#fff;background:linear-gradient(180deg,#061729,#0a2744)}.logo-card,.northstar-card{height:58px;display:flex;align-items:center;justify-content:center;padding:6px;border-radius:13px;background:#fff}.northstar-card{margin-top:8px;background:#020914}.logo-card img,.northstar-card img{max-width:190px;max-height:48px}.pilot-card{display:flex;align-items:center;gap:10px;margin:17px 0;padding:12px;border:1px solid #31516f;border-radius:13px;background:#102f4d}.pilot-card>span{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:#0a66ff;font-weight:900}.pilot-card strong,.pilot-card small{display:block}.pilot-card small{margin-top:3px;color:#9abbd6}.home-sidebar nav{display:grid;gap:6px}.home-sidebar nav a{padding:11px 12px;border-radius:10px;color:#bed2e4;text-decoration:none;font-size:12px;font-weight:850}.home-sidebar nav a.active{color:#fff;background:#0d4a7c}.system-status{display:grid;gap:10px;margin-top:22px;padding-top:17px;border-top:1px solid #28475f;color:#c6d9e8;font-size:10px}.system-status small{color:#7fa9ca;letter-spacing:.12em;font-weight:900}.home-main{margin-left:258px}.command-topbar{min-height:68px;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid #d7e3ec;background:#fff}.command-topbar>div{margin-right:auto}.command-topbar small,.command-topbar strong{display:block}.command-topbar small{color:#6b8296;font-size:9px;font-weight:900;letter-spacing:.12em}.connected{padding:8px 11px;border-radius:999px;color:#176747;background:#e4f8ef;font-size:10px;font-weight:900}.home-content{max-width:1460px;margin:0 auto;padding:24px 24px 70px}.welcome{display:grid;grid-template-columns:1.35fr .65fr;gap:18px;align-items:stretch}.welcome>div:first-child{padding:30px;border-radius:24px;color:#fff;background:linear-gradient(135deg,#07192c,#0b477c 64%,#0a66ff);box-shadow:0 24px 60px rgba(8,47,82,.22)}.welcome small,.panel-heading small,.advanced small{font-size:9px;font-weight:900;letter-spacing:.12em}.welcome>div:first-child small{color:#9ed6ff}.welcome h1{max-width:850px;margin:12px 0 10px;font-size:clamp(32px,4vw,55px);line-height:1.02}.welcome p{max-width:850px;margin:0;color:#d6e8f6;line-height:1.65}.pilot-guidance{display:flex;gap:12px;align-items:flex-start;padding:23px;border:1px solid #d5e1ea;border-radius:20px;background:#fff;box-shadow:0 13px 35px rgba(24,53,77,.08)}.pilot-guidance>svg{flex:0 0 auto;color:#0a66ff}.pilot-guidance small,.pilot-guidance strong,.pilot-guidance span{display:block}.pilot-guidance small{color:#0a66ff}.pilot-guidance strong{margin-top:6px;font-size:17px;line-height:1.35}.pilot-guidance span{margin-top:7px;color:#647b8f;font-size:11px;line-height:1.55}.primary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}.primary-card{display:grid;grid-template-columns:50px 1fr;gap:13px;padding:18px;border:1px solid #d7e2eb;border-radius:18px;color:#173550;background:#fff;text-decoration:none;box-shadow:0 10px 28px rgba(24,53,77,.07);transition:.18s}.primary-card:hover{transform:translateY(-2px);border-color:#84b7df}.primary-card>span{width:50px;height:50px;display:grid;place-items:center;border-radius:13px;color:#0a66ff;background:#e9f4ff}.primary-card h2{margin:1px 0 7px}.primary-card p{margin:0;color:#647b8f;font-size:11px;line-height:1.5}.primary-card b{display:flex;align-items:center;gap:6px;margin-top:13px;color:#0a66ff;font-size:10px}.live-command-block{margin-top:16px}.two-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:17px;margin-top:17px}.panel{padding:20px;border:1px solid #dbe5ed;border-radius:18px;background:#fff;box-shadow:0 11px 28px rgba(24,53,77,.07)}.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.panel-heading small{color:#0a66ff}.panel-heading h2{margin:5px 0 0}.panel-heading>svg{color:#0a66ff}.priority-list{display:grid;gap:9px;margin-top:15px}.priority-list article{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:11px;border:1px solid #dce5ed;border-radius:12px}.priority-list strong,.priority-list small{display:block}.priority-list small{margin-top:3px;color:#73899b;font-size:9px}.priority-list article>b{color:#295e84;font-size:11px}.severity{padding:5px 7px;border-radius:999px;font-size:8px;font-weight:950;text-transform:uppercase}.severity.critical{color:#8f1f2c;background:#ffe7ea}.severity.high{color:#85520a;background:#fff0d5}.panel-link{display:flex;align-items:center;gap:6px;margin-top:14px;color:#0a66ff;text-decoration:none;font-size:10px;font-weight:900}.simple-flow{display:grid;gap:12px}.flow-step{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;padding:12px;border:1px solid #e0e8ef;border-radius:12px;background:#f8fbfd}.flow-step>span{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#0a66ff;background:#e8f2ff;font-weight:950}.flow-step strong{display:block}.flow-step p{margin:4px 0 0;color:#647b8f;font-size:10px;line-height:1.5}.advanced{display:flex;align-items:center;gap:12px;margin-top:17px;padding:14px 16px;border:1px solid #d8e4ed;border-radius:15px;background:#fff}.advanced>div:first-child{display:flex;align-items:center;gap:9px;margin-right:auto}.advanced>div:first-child>svg{color:#16835a}.advanced small,.advanced strong{display:block}.advanced small{color:#6c8194}.advanced strong{margin-top:3px;font-size:11px}.advanced>div:last-child{display:flex;gap:8px;flex-wrap:wrap}.advanced a{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #d7e3ec;border-radius:9px;color:#42637e;text-decoration:none;font-size:9px;font-weight:850}@media(max-width:980px){.welcome,.two-grid{grid-template-columns:1fr}.primary-grid{grid-template-columns:1fr}}@media(max-width:820px){.home-sidebar{position:static;width:auto;height:auto}.home-main{margin-left:0}.system-status{display:none}}@media(max-width:640px){.advanced{align-items:flex-start;flex-direction:column}}
+        *{box-sizing:border-box}body{margin:0;background:#eef2f6}.enterprise-shell{min-height:100vh;color:#14283b;background:#eef2f6;font-family:Inter,Arial,sans-serif}.enterprise-main{margin-left:236px}.enterprise-topbar{min-height:64px;display:flex;align-items:center;padding:0 24px;border-bottom:1px solid #d7e0e8;background:rgba(255,255,255,.98)}.enterprise-topbar>div{margin-right:auto}.enterprise-topbar small,.enterprise-topbar strong{display:block}.enterprise-topbar small{color:#71869a;font-size:8px;font-weight:900;letter-spacing:.14em}.enterprise-topbar strong{margin-top:3px;color:#18344d;font-size:13px}.secure-state{display:flex;align-items:center;gap:7px;margin-right:300px;color:#3e617d;font-size:9px;font-weight:850}.secure-state i{width:7px;height:7px;border-radius:50%;background:#31bd80;box-shadow:0 0 0 3px rgba(49,189,128,.1)}.enterprise-content{max-width:1540px;margin:0 auto;padding:20px 22px 58px}.pilot-briefing{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:15px;align-items:center;padding:18px 20px;border:1px solid #1c4161;border-radius:12px;color:#fff;background:linear-gradient(105deg,#0a1d2f 0%,#0b3152 68%,#0d4f82 100%);box-shadow:0 12px 32px rgba(13,40,63,.16)}.pilot-mark{width:42px;height:42px;display:grid;place-items:center;border:1px solid #386789;border-radius:9px;color:#8fc9f6;background:#0d2941}.pilot-copy small{color:#8fc8ef;font-size:8px;font-weight:950;letter-spacing:.14em}.pilot-copy h1{margin:5px 0 4px;font-size:17px;line-height:1.3}.pilot-copy p{margin:0;color:#b9d0e1;font-size:9px;line-height:1.5}.pilot-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.pilot-actions a{min-height:36px;display:flex;align-items:center;gap:6px;padding:0 11px;border:1px solid #4e7795;border-radius:7px;color:#d8e8f4;background:rgba(5,29,48,.45);text-decoration:none;font-size:9px;font-weight:850}.pilot-actions a.primary{border-color:#d8e9f6;color:#0c2940;background:#fff}.live-command-block{margin-top:14px}.live-command-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.live-mode{padding:6px 9px;border-radius:999px;font-size:8px;font-weight:900}.live-mode.secure{color:#166847;background:#e4f7ee}.live-mode.demo{color:#7a5715;background:#fff1cd}.live-command-toolbar button{min-height:34px;padding:0 10px;border:1px solid #ccd8e2;border-radius:7px;color:#315a78;background:#fff;font-size:9px;font-weight:850}.live-command-notice{display:flex;align-items:center;gap:7px;margin-top:8px;padding:9px 11px;border:1px solid #b9d3e7;border-radius:8px;color:#245b81;background:#f0f7fc;font-size:9px;font-weight:750}.live-metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-top:9px}.live-metric-grid article{padding:13px 14px;border:1px solid #d8e2ea;border-radius:10px;background:#fff;box-shadow:0 4px 14px rgba(24,52,76,.04)}.live-metric-grid small,.live-metric-grid strong,.live-metric-grid span{display:block}.live-metric-grid small{color:#74899b;font-size:7px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.live-metric-grid strong{margin-top:6px;font-size:22px}.live-metric-grid span{margin-top:3px;color:#698093;font-size:8px}.console-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.45fr);gap:12px;margin-top:12px}.enterprise-panel{padding:16px;border:1px solid #d5e0e8;border-radius:11px;background:#fff;box-shadow:0 5px 18px rgba(20,48,72,.05)}.panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:11px;border-bottom:1px solid #e5ebf0}.panel-title small{color:#0a66b7;font-size:7px;font-weight:950;letter-spacing:.13em}.panel-title h2{margin:4px 0 0;font-size:15px}.panel-title>svg{color:#62819a}.priority-table{display:grid}.priority-row{display:grid;grid-template-columns:62px minmax(0,1fr) auto 28px;gap:10px;align-items:center;min-height:57px;border-bottom:1px solid #edf1f4}.priority-row:last-child{border-bottom:0}.priority-row strong,.priority-row small{display:block}.priority-row strong{font-size:10px}.priority-row small{margin-top:3px;color:#788c9e;font-size:8px}.priority-row b{color:#335d7b;font-size:9px;white-space:nowrap}.priority-row>a{width:28px;height:28px;display:grid;place-items:center;border:1px solid #d8e3eb;border-radius:7px;color:#447394}.severity{justify-self:start;padding:4px 6px;border-radius:5px;font-size:7px;font-weight:950;text-transform:uppercase}.severity.critical{color:#8f2531;background:#fce8eb}.severity.high{color:#7d550d;background:#fff0d3}.readiness-score{display:flex;align-items:baseline;margin-top:18px}.readiness-score strong{font-size:42px;line-height:1}.readiness-score span{margin-left:4px;color:#6f8597;font-size:11px;font-weight:800}.readiness-bar{height:7px;margin:12px 0 15px;overflow:hidden;border-radius:999px;background:#e3e9ee}.readiness-bar i{display:block;width:92%;height:100%;background:linear-gradient(90deg,#176db4,#26a879)}.readiness-panel ul{display:grid;gap:8px;margin:0;padding:0;list-style:none}.readiness-panel li{display:flex;align-items:center;gap:7px;color:#526e84;font-size:9px}.readiness-panel li svg{color:#20a875}.text-link{display:flex;align-items:center;gap:6px;margin-top:14px;color:#0a66b7;text-decoration:none;font-size:9px;font-weight:900}.enterprise-section-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:20px 0 10px}.enterprise-section-heading small{color:#0a66b7;font-size:7px;font-weight:950;letter-spacing:.13em}.enterprise-section-heading h2{margin:4px 0 0;font-size:16px}.enterprise-section-heading>a{display:flex;align-items:center;gap:5px;color:#0a66b7;text-decoration:none;font-size:9px;font-weight:850}.smart-launch-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.smart-launch-tile{min-height:160px;display:flex;flex-direction:column;padding:14px;border:1px solid #d4dfe8;border-radius:10px;color:#16354d;background:#fff;text-decoration:none;box-shadow:0 4px 14px rgba(23,52,77,.04);transition:.16s}.smart-launch-tile:hover{transform:translateY(-2px);border-color:#7baacf;box-shadow:0 8px 20px rgba(23,52,77,.08)}.smart-launch-top{display:flex;align-items:center;justify-content:space-between}.smart-launch-top>span{width:38px;height:38px;display:grid;place-items:center;border-radius:8px;color:#0b67b3;background:#e9f2fa}.smart-launch-top em{color:#2d7558;font-size:7px;font-style:normal;font-weight:900;letter-spacing:.08em}.smart-launch-tile>strong{margin-top:13px;font-size:11px}.smart-launch-tile p{margin:6px 0 0;color:#6e8294;font-size:8px;line-height:1.5}.smart-launch-tile>div:last-child{display:flex;align-items:center;gap:5px;margin-top:auto;padding-top:13px;color:#0a66b7;font-size:8px;font-weight:900}.lower-grid{grid-template-columns:minmax(0,1.3fr) minmax(320px,.7fr);margin-top:12px}.agent-status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0 16px}.agent-status-grid>div{display:grid;grid-template-columns:9px 1fr auto;gap:8px;align-items:center;min-height:50px;border-bottom:1px solid #edf1f4}.agent-dot{width:7px;height:7px;border-radius:50%;background:#30bd81}.agent-status-grid strong,.agent-status-grid small{display:block}.agent-status-grid strong{font-size:9px}.agent-status-grid small{margin-top:2px;color:#768b9c;font-size:7px}.agent-status-grid em{color:#2e7458;font-size:7px;font-style:normal;font-weight:900}.advanced-panel>p{color:#60778a;font-size:9px;line-height:1.55}.advanced-panel>a{display:grid;grid-template-columns:26px 1fr auto;gap:9px;align-items:center;padding:10px 0;border-top:1px solid #edf1f4;color:#31536d;text-decoration:none}.advanced-panel>a>svg:first-child{color:#0a66b7}.advanced-panel>a strong,.advanced-panel>a small{display:block}.advanced-panel>a strong{font-size:9px}.advanced-panel>a small{margin-top:2px;color:#7a8e9f;font-size:7px}.advanced-panel>a>svg:last-child{color:#8da0af}@media(max-width:1200px){.smart-launch-grid{grid-template-columns:repeat(3,1fr)}.console-grid,.lower-grid{grid-template-columns:1fr}.secure-state{margin-right:72px}}@media(max-width:820px){.enterprise-main{margin-left:0}.enterprise-topbar{padding:0 14px}.enterprise-content{padding:14px}.pilot-briefing{grid-template-columns:40px 1fr}.pilot-actions{grid-column:1/-1;justify-content:flex-start}.smart-launch-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.smart-launch-grid,.agent-status-grid{grid-template-columns:1fr}.priority-row{grid-template-columns:58px 1fr 28px}.priority-row b{display:none}}
       `}</style>
     </main>
   );
