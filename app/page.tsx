@@ -104,7 +104,7 @@ export default function Home() {
                   <div key={name}><span className="agent-dot"/><div><strong>{name}</strong><small>{role}</small></div><em>{status}</em></div>
                 ))}
               </div>
-              <a className="text-link" href="/workforce-operations">Open AI Workforce Operations <ArrowRight size={14}/></a>
+              <a className="text-link" href="/workforce-operations">Open AI Workforce <ArrowRight size={14}/></a>
             </article>
 
             <article className="enterprise-panel advanced-panel">

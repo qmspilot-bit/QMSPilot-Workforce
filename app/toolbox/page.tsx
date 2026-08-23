@@ -29,7 +29,7 @@ const applications = [
 ];
 
 const advanced = [
-  { title: "AI Workforce Operations", note: "Pilot and specialist agents, recommendations, approvals, and controlled writeback.", href: "/workforce-operations", icon: BrainCircuit },
+  { title: "AI Workforce", note: "Pilot and specialist agents, recommendations, approvals, and controlled writeback.", href: "/workforce-operations", icon: BrainCircuit },
   { title: "Entity Graph", note: "Connected business context across customers, records, actions, assets, and operating signals.", href: "/entity-graph", icon: Database },
   { title: "Accountability", note: "Organization-wide ownership, due dates, evidence, escalation, and verified closure.", href: "/dashboard", icon: ShieldCheck },
 ];

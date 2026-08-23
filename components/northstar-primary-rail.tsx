@@ -1,15 +1,16 @@
 "use client";
 
-import { BarChart3, BriefcaseBusiness, Home, ListChecks, ShieldCheck } from "lucide-react";
+import { BarChart3, BrainCircuit, BriefcaseBusiness, Home, ListChecks, ShieldCheck } from "lucide-react";
 import { NORTHSTAR_LOGO_DATA_URI, QMSPILOT_LOGO_DATA_URI } from "@/lib/northstar-brand-assets";
 
-type ActiveSection = "home" | "work" | "actions" | "leadership";
+type ActiveSection = "home" | "work" | "actions" | "leadership" | "ai-workforce";
 
 const items = [
   { key: "home" as const, href: "/", label: "Home", note: "Operating view", icon: Home },
   { key: "work" as const, href: "/toolbox", label: "Work", note: "Smart workspaces", icon: BriefcaseBusiness },
   { key: "actions" as const, href: "/my-actions", label: "My Actions", note: "Ownership & closure", icon: ListChecks },
   { key: "leadership" as const, href: "/executive-intelligence", label: "Leadership", note: "Risk & performance", icon: BarChart3 },
+  { key: "ai-workforce" as const, href: "/workforce-operations", label: "AI Workforce", note: "Agents & recommendations", icon: BrainCircuit },
 ];
 
 export function NorthstarPrimaryRail({ active }: { active: ActiveSection }) {
@@ -54,7 +55,7 @@ export function NorthstarPrimaryRail({ active }: { active: ActiveSection }) {
         .rail-status{margin-top:auto;padding:13px 11px 10px;border-top:1px solid rgba(151,185,212,.16);color:#8faabd}
         .rail-status-head{display:flex;align-items:center;gap:7px;margin-bottom:10px;color:#c8d8e5;font-size:9px;font-weight:850}.rail-status-head svg{color:#55c997}
         .rail-status-row{display:flex;align-items:center;gap:7px;margin-top:7px;font-size:7px}.rail-status-row i{width:6px;height:6px;border-radius:50%;background:#37c989;box-shadow:0 0 0 3px rgba(55,201,137,.09)}
-        @media(max-width:820px){.northstar-primary-rail{position:static;width:auto;height:auto;display:block;padding:11px}.northstar-brand-lockup{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 0 10px}.northstar-qms-logo,.northstar-wordmark{height:42px;margin:0}.rail-section-label,.rail-status{display:none}.northstar-primary-nav{grid-template-columns:repeat(4,1fr);gap:5px}.northstar-primary-nav a{grid-template-columns:1fr;min-height:44px;padding:7px;text-align:center}.rail-icon{display:none}.rail-copy small{display:none}}
+        @media(max-width:820px){.northstar-primary-rail{position:static;width:auto;height:auto;display:block;padding:11px}.northstar-brand-lockup{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 0 10px}.northstar-qms-logo,.northstar-wordmark{height:42px;margin:0}.rail-section-label,.rail-status{display:none}.northstar-primary-nav{grid-template-columns:repeat(5,1fr);gap:5px}.northstar-primary-nav a{grid-template-columns:1fr;min-height:44px;padding:7px;text-align:center}.rail-icon{display:none}.rail-copy small{display:none}}
         @media(max-width:560px){.northstar-primary-nav{grid-template-columns:repeat(2,1fr)}}
       `}</style>
     </aside>

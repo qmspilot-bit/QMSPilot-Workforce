@@ -76,7 +76,7 @@ export default function ExecutiveIntelligencePage() {
         <nav>
           <a href="/">Command Center</a>
           <a className="active" href="/executive-intelligence">Executive Intelligence</a>
-          <a href="/workforce-operations">AI Workforce Operations</a>
+          <a href="/workforce-operations">AI Workforce</a>
           <a href="/entity-graph">Entity Graph</a>
           <a href="/dashboard">Accountability</a>
           <a href="/toolbox">Workspaces</a>

@@ -8,6 +8,7 @@ const primaryItems = [
   { href: "/toolbox", label: "Work" },
   { href: "/my-actions", label: "My Actions" },
   { href: "/executive-intelligence", label: "Leadership" },
+  { href: "/workforce-operations", label: "AI Workforce" },
 ];
 
 function isPrimaryNav(nav: HTMLElement) {
@@ -19,7 +20,8 @@ function isPrimaryNav(nav: HTMLElement) {
 function activeHref(pathname: string) {
   if (pathname === "/") return "/";
   if (pathname === "/my-actions") return "/my-actions";
-  if (pathname === "/executive-intelligence" || pathname === "/dashboard" || pathname.startsWith("/workforce-operations") || pathname.startsWith("/entity-graph")) {
+  if (pathname.startsWith("/workforce-operations")) return "/workforce-operations";
+  if (pathname === "/executive-intelligence" || pathname === "/dashboard" || pathname.startsWith("/entity-graph")) {
     return "/executive-intelligence";
   }
   if (pathname === "/toolbox" || pathname.startsWith("/smart-") || pathname.startsWith("/tools/")) return "/toolbox";
